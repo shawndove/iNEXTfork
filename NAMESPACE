@@ -1,0 +1,12 @@
+import(stats)
+import(ggplot2)
+import(graphics)
+
+export(
+"iNEXT",
+"DataInfo",
+"ChaoSpecies",
+"ChaoEntropy",
+"EstSimpson",
+"ggiNEXT"
+)
