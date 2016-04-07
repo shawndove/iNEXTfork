@@ -109,7 +109,7 @@ invChat <- function(x, datatype="abundance", C=NULL){
         C <- min(unlist(lapply(x, function(x) Chat.Ind(x, sum(x)))))
       }
       do.call(rbind, lapply(x, function(x) invChat.Ind(x, C)))
-    }else if(class(x)=="data.fram" | class(x)=="matrix"){
+    }else if(class(x)=="data.frame" | class(x)=="matrix"){
       if(is.null(C)){
         C <- min(unlist(apply(x, 2, function(x) Chat.Ind(x, sum(x)))))
       }
@@ -127,7 +127,7 @@ invChat <- function(x, datatype="abundance", C=NULL){
         C <- min(unlist(lapply(x, function(x) Chat.Sam(x, max(x)))))
       }
       do.call(rbind, lapply(x, function(x) invChat.Sam(x, C)))
-    }else if(class(x)=="data.fram" | class(x)=="matrix"){
+    }else if(class(x)=="data.frame" | class(x)=="matrix"){
       if(is.null(C)){
         C <- min(unlist(apply(x, 2, function(x) Chat.Sam(x, max(x)))))
       }
@@ -173,7 +173,7 @@ invSize <- function(x, datatype="abundance", size=NULL){
 		colnames(out) <- c("m", "method", "SC", "q = 0", "q = 1", "q = 2")
 		out
       }))
-    }else if(class(x)=="data.fram" | class(x)=="matrix"){
+    }else if(class(x)=="data.frame" | class(x)=="matrix"){
       if(is.null(size)){
         size <- min(unlist(apply(x, 2, function(x) sum(x))))
       }
@@ -217,7 +217,7 @@ invSize <- function(x, datatype="abundance", size=NULL){
 		colnames(out) <- c("m", "method", "SC", "q = 0", "q = 1", "q = 2")
 		out
       }))
-    }else if(class(x)=="data.fram" | class(x)=="matrix"){
+    }else if(class(x)=="data.frame" | class(x)=="matrix"){
       if(is.null(size)){
         size <- min(unlist(apply(x, 2, function(x) max(x))))
       }
@@ -247,14 +247,14 @@ invSize <- function(x, datatype="abundance", size=NULL){
 # 
 
 ###############################################
-#' Compute species diversity with a particular sample size/coverage 
+#' Compute species diversity with a particular of sample size/coverage 
 #' 
 #' \code{estimateD}: computes species diversity (Hill numbers with q = 0, 1 and 2) with a particular user-specified level of sample size or sample coverage.
 #' @param x a \code{data.frame} or \code{list} of species abundances or incidence frequencies.\cr 
 #' If \code{datatype = "incidence"}, then the first entry of the input data must be total number of sampling units, followed 
 #' by species incidence frequencies in each column or list.
-#' @param datatype data type of input data: individual-based abundance data (\code{datatype = "abundance"}) or 
-#' sampling-unit-based incidence data (\code{datatype = "incidence"}).
+#' @param datatype data type of input data: individual-based abundance data (\code{datatype = "abundance"}),  
+#' sampling-unit-based incidence frequencies data (\code{datatype = "incidence_freq"}) or species by sampling-units incidence matrix (\code{datatype = "incidence_raw"}).
 #' @param base comparison base: sample-size-based (\code{base="size"}) or coverage-based \cr (\code{base="coverage"}).
 #' @param level an integer specifying a particular sample size or a number (between 0 and 1) specifying a particular value of sample coverage. 
 #' If \code{base="size"} and \code{level=NULL}, then this function computes the diversity estimates for the minimum sample size among all sites. 
@@ -267,16 +267,24 @@ invSize <- function(x, datatype="abundance", size=NULL){
 #' estimateD(spider, "abundance", base="coverage", level=NULL)
 #' 
 #' data(ant)
-#' estimateD(ant, "incidence", base="coverage", level=0.985)
+#' estimateD(ant, "incidence_freq", base="coverage", level=0.985)
 #' @export
 estimateD <- function(x, datatype="abundance", base="size", level=NULL){
-  TYPE <- c("abundance", "incidence")
+  TYPE <- c("abundance", "incidence", "incidence_freq", "incidence_raw")
+  #TYPE <- c("abundance", "incidence")
   if(is.na(pmatch(datatype, TYPE)))
     stop("invalid datatype")
   if(pmatch(datatype, TYPE) == -1)
     stop("ambiguous datatype")
   datatype <- match.arg(datatype, TYPE)
   
+  if(datatype == "incidence"){
+    stop('datatype="incidence" was no longer supported after v2.0.8, 
+         please try datatype="incidence_freq".')  
+  }
+  if(datatype=="incidence_freq") datatype <- "incidence"
+  
+    
   BASE <- c("size", "coverage")
   if(is.na(pmatch(base, BASE)))
     stop("invalid datatype")
@@ -295,3 +303,65 @@ estimateD <- function(x, datatype="abundance", base="size", level=NULL){
 # Compare(spider, datatype="abundance", base="coverage")
 # Compare(ant, datatype="incidence", base="size")
 # Compare(ant, datatype="incidence", base="coverage")
+
+
+# -----------------
+# 2015-12-27, add transformation function 
+# from incidence raw data to incidence frequencies data (iNEXT input format)
+# 
+
+###############################################
+#' Transform incidence raw data to incidence frequencies (iNEXT input format) 
+#' 
+#' \code{as.incfreq}: transform incidence raw data (a species by sites presence-absence matrix) to incidence frequencies data (iNEXT input format, a row-sum frequencies vector contains total number of sampling units).
+#' @param x a \code{data.frame} or \code{matirx} of species by sites presence-absence matrix.
+#' @return a \code{vector} of species incidence frequencies, the first entry of the input data must be total number of sampling units.
+#' @examples
+#' data(plant)
+#' lapply(plant, as.incfreq)
+#' 
+#' @export
+#' 
+as.incfreq <- function(x){
+  if(class(x) == "data.frame" | class(x) == "matrix"){
+    a <- unique(c(unlist(x)))
+    if(!identical(a, c(0,1))){
+      warning("Invalid data type, the element of species by sites presence-absence matrix should be 0 or 1. Set nonzero elements as 1.")
+      x <- (x > 0)
+    }
+    nT <- ncol(x)
+    y <- rowSums(x)
+    y <- c(nT, y)
+    # names(y) <- c("nT", rownames(x))
+    y
+  }else if(class(x)=="numeric" | class(x)=="integer" | class(x)=="double"){
+    warnings("Ambiguous data type, the input object is a vector. Set total number of sampling units as 1.")
+    c(1, x) 
+  }else{
+    stop("Invalid data type, it should be a data.frame or matrix.")
+  }
+}
+
+###############################################
+#' Transform abundance raw data to abundance row-sum counts (iNEXT input format) 
+#' 
+#' \code{as.abucount}: transform abundance raw data (a species by sites matrix) to abundance rwo-sum counts data (iNEXT input format).
+#' @param x a \code{data.frame} or \code{matirx} of species by sites matrix.
+#' @return a \code{vector} of species abundance row-sum counts.
+#' @examples
+#' data(plant)
+#' lapply(plant, as.abucount)
+#' 
+#' @export
+#' 
+as.abucount <- function(x){
+  if(class(x) == "data.frame" | class(x) == "matrix"){
+    y <- rowSums(x)
+    y
+  }else if(class(x)=="numeric" | class(x)=="integer" | class(x)=="double"){
+    warnings("Ambiguous data type, the input object is a vector. Set total number of sampling units as 1.")
+    x 
+  }else{
+    stop("invalid data type, it should be a data.frame or matrix.")
+  }
+}

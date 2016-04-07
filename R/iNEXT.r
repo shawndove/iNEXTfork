@@ -158,13 +158,13 @@ Dqhat.Ind <- function(x, q, m){
         D.hat <- exp(UE+B)
         Dn <- exp(-sum(x / n * log(x / n)))
         
-        #a <- 1:(n-1)
-        #b <- 1:(n-2)
-        #Da <-  exp(-sum(a / (n-1) * log(a / (n-1)) * fk.hat(x, (n-1))))
-        #Db <-  exp(-sum(b / (n-2) * log(b / (n-2)) * fk.hat(x, (n-2))))
-        #Dn1 <- ifelse(Da!=Db, Dn + (Dn-Da)^2/(Da-Db), Dn)
-        #b <- ifelse(D.hat>Dn, (Dn1-Dn)/(D.hat-Dn), 0)
-        b <- A
+        a <- 1:(n-1)
+        b <- 1:(n-2)
+        Da <-  exp(-sum(a / (n-1) * log(a / (n-1)) * fk.hat(x, (n-1))))
+        Db <-  exp(-sum(b / (n-2) * log(b / (n-2)) * fk.hat(x, (n-2))))
+        Dn1 <- ifelse(Da!=Db, Dn + (Dn-Da)^2/(Da-Db), Dn)
+        b <- ifelse(D.hat>Dn, (Dn1-Dn)/(D.hat-Dn), 0)
+        # b <- A
         ifelse(b!=0, Dn + (D.hat-Dn)*(1-(1-b)^(m-n)), Dn)
       }
     }
@@ -260,17 +260,17 @@ Dqhat.Sam <- function(y, q, t){
         H.hat <- UE+B
         D.hat <- exp(nT/U*H.hat-log(nT/U))
         
-        #a <- 1:(nT-1)
-        #b <- 1:(nT-2)
-        #Ua <- (nT-1) / nT * U
-        #Ub <- (nT-2) / nT * U
-        #Da <- exp(-sum(a / Ua * log(a / Ua) * Qk.hat(y, nT, nT-1)))
-        #Db <- exp(-sum(b / Ub * log(b / Ub) * Qk.hat(y, nT, nT-2)))
+        a <- 1:(nT-1)
+        b <- 1:(nT-2)
+        Ua <- (nT-1) / nT * U
+        Ub <- (nT-2) / nT * U
+        Da <- exp(-sum(a / Ua * log(a / Ua) * Qk.hat(y, nT, nT-1)))
+        Db <- exp(-sum(b / Ub * log(b / Ub) * Qk.hat(y, nT, nT-2)))
         Dn <- exp(-sum(y / U * log(y / U)))
         
-        #Dn1 <- ifelse(Da!=Db, Dn + (Dn-Da)^2/(Da-Db), Dn)
-        #b <- ifelse(D.hat>Dn, (Dn1-Dn)/(D.hat-Dn), 0)
-        b <- A
+        Dn1 <- ifelse(Da!=Db, Dn + (Dn-Da)^2/(Da-Db), Dn)
+        b <- ifelse(D.hat>Dn, (Dn1-Dn)/(D.hat-Dn), 0)
+        #b <- A
         ifelse(b!=0, Dn + (D.hat-Dn)*(1-(1-b)^(t-nT)), Dn)
       }
     }
@@ -387,7 +387,7 @@ Chat.Sam <- function(x, t){
 # iNEXT.Ind(spider$Girdled, q=0, endpoint=500)
 # # q = 1 with specific sample size m and don't calculate standard error
 # iNEXT.Ind(spider$Girdled, q=1, m=c(1, 10, 20, 50, 100, 200, 400, 600), se=FALSE)
-iNEXT.Ind <- function(Spec, q=0, m=NULL, endpoint=2*sum(Spec), knots=40, se=TRUE, nboot=200)
+iNEXT.Ind <- function(Spec, q=0, m=NULL, endpoint=2*sum(Spec), knots=40, se=TRUE, nboot=200, conf=0.95)
 {
   
   n <- sum(Spec)		  	#sample size
@@ -410,21 +410,21 @@ iNEXT.Ind <- function(Spec, q=0, m=NULL, endpoint=2*sum(Spec), knots=40, se=TRUE
     Prob.hat <- EstiBootComm.Ind(Spec)
     Abun.Mat <- rmultinom(nboot, n, Prob.hat)
     
-    error <-  qnorm(0.975) * apply(apply(Abun.Mat, 2, function(x) Dqhat.Ind(x, q, m)), 1, sd, na.rm=TRUE)
+    error <-  qnorm(1-(1-conf)/2) * apply(apply(Abun.Mat, 2, function(x) Dqhat.Ind(x, q, m)), 1, sd, na.rm=TRUE)
     left  <- Dq.hat - error
     right <- Dq.hat + error
     
-    error.C <-  qnorm(0.975) * apply(apply(Abun.Mat, 2, function(x) Chat.Ind(x, m)), 1, sd, na.rm=TRUE)
+    error.C <-  qnorm(1-(1-conf)/2) * apply(apply(Abun.Mat, 2, function(x) Chat.Ind(x, m)), 1, sd, na.rm=TRUE)
     left.C  <- C.hat - error.C
     right.C <- C.hat + error.C
-    out <- cbind("m"=m, "qD"=Dq.hat, "qD.95.LCL"=left, "qD.95.UCL"=right, "SC"=C.hat, "SC.95.LCL"=left.C, "SC.95.UCL"=right.C)
+    out <- cbind("m"=m, "qD"=Dq.hat, "qD.LCL"=left, "qD.UCL"=right, "SC"=C.hat, "SC.LCL"=left.C, "SC.UCL"=right.C)
   } else {
     out <- cbind("m"=m, "qD"=Dq.hat, "SC"=C.hat)
   }
   out <- data.frame(out)
   out$method <- ifelse(out$m<n, "interpolated", ifelse(out$m==n, "observed", "extrapolated"))
   out$order <- q
-  id <- match(c("m", "method", "order", "qD", "qD.95.LCL", "qD.95.UCL", "SC", "SC.95.LCL", "SC.95.UCL"), names(out), nomatch = 0)
+  id <- match(c("m", "method", "order", "qD", "qD.LCL", "qD.UCL", "SC", "SC.LCL", "SC.UCL"), names(out), nomatch = 0)
   out <- out[, id]
   return(out)
 }
@@ -453,7 +453,7 @@ iNEXT.Ind <- function(Spec, q=0, m=NULL, endpoint=2*sum(Spec), knots=40, se=TRUE
 # iNEXT.Sam(ant$h50m, q=0, endpoint=100)
 # # q = 1 with specific sample size m and don't calculate standard error
 # iNEXT.Sam(ant$h500m, q=1, t=round(seq(10, 500, length.out=20)), se=FALSE)
-iNEXT.Sam <- function(Spec, t=NULL, q=0, endpoint=2*max(Spec), knots=40, se=TRUE, nboot=200)
+iNEXT.Sam <- function(Spec, t=NULL, q=0, endpoint=2*max(Spec), knots=40, se=TRUE, nboot=200, conf=0.95)
 {
   
   if(which.max(Spec)!=1) 
@@ -485,18 +485,18 @@ iNEXT.Sam <- function(Spec, t=NULL, q=0, endpoint=2*max(Spec), knots=40, se=TRUE
       out <- cbind("t"=t, "qD"=Dq.hat, "SC"=C.hat)
       warning("Insufficient data to compute bootstrap s.e.")
     }else{		
-      error <-  qnorm(0.975) * apply(apply(Abun.Mat, 2, function(y) Dqhat.Sam(y, q, t)), 1, sd, na.rm=TRUE)
+      error <-  qnorm(1-(1-conf)/2) * apply(apply(Abun.Mat, 2, function(y) Dqhat.Sam(y, q, t)), 1, sd, na.rm=TRUE)
       left  <- Dq.hat - error
       right <- Dq.hat + error
       left[left<=0] <- 0
       
-      error.C <-  qnorm(0.975) * apply(apply(Abun.Mat, 2, function(y) Chat.Sam(y, t)), 1, sd, na.rm=TRUE)
+      error.C <-  qnorm(1-(1-conf)/2) * apply(apply(Abun.Mat, 2, function(y) Chat.Sam(y, t)), 1, sd, na.rm=TRUE)
       left.C  <- C.hat - error.C
       right.C <- C.hat + error.C
       left.C[left.C<=0] <- 0
       right.C[right.C>=1] <- 1
       
-      out <- cbind("t"=t, "qD"=Dq.hat, "qD.95.LCL"=left, "qD.95.UCL"=right, "SC"=C.hat, "SC.95.LCL"=left.C, "SC.95.UCL"=right.C)
+      out <- cbind("t"=t, "qD"=Dq.hat, "qD.LCL"=left, "qD.UCL"=right, "SC"=C.hat, "SC.LCL"=left.C, "SC.UCL"=right.C)
     }
   }else {
     out <- cbind("t"=t, "qD"=Dq.hat, "SC"=C.hat)
@@ -504,7 +504,7 @@ iNEXT.Sam <- function(Spec, t=NULL, q=0, endpoint=2*max(Spec), knots=40, se=TRUE
   out <- data.frame(out)
   out$method <- ifelse(out$t<nT, "interpolated", ifelse(out$t==nT, "observed", "extrapolated"))
   out$order <- q
-  id <- match(c("t", "method", "order", "qD", "qD.95.LCL", "qD.95.UCL", "SC", "SC.95.LCL", "SC.95.UCL"), names(out), nomatch = 0)
+  id <- match(c("t", "method", "order", "qD", "qD.LCL", "qD.UCL", "SC", "SC.LCL", "SC.UCL"), names(out), nomatch = 0)
   out <- out[, id]
   return(out)
 }
@@ -513,14 +513,15 @@ iNEXT.Sam <- function(Spec, t=NULL, q=0, endpoint=2*max(Spec), knots=40, se=TRUE
 #
 #
 ###############################################
-#' iNterpolation and EXTrapolation of Hill numbers
+#' iNterpolation and EXTrapolation of Hill number
 #' 
-#' \code{iNEXT}: Interpolation and extrapolation of Hill number with order \code{q}.
+#' \code{iNEXT}: Interpolation and extrapolation of Hill number with order q
 #' 
 #' @param x a matrix, data.frame (species by sites), or list of species abundances or incidence frequencies. If \code{datatype = "incidence"}, then the first entry of the input data must be total number of sampling units in each column or list. 
-#' @param q a numeric value specifying the diversity order of Hill numbers.
-#' @param datatype data type of input data: individual-based abundance data (\code{datatype = "abundance"}) or 
-#' sampling-unit-based incidence data (\code{datatype = "incidence"}).
+#' @param q a numeric value specifying the diversity order of Hill number .
+#' @param datatype data type of input data: individual-based abundance data (\code{datatype = "abundance"}),  
+#' sampling-unit-based incidence frequencies data (\code{datatype = "incidence_freq"}) or species by sampling-units incidence matrix (\code{datatype = "incidence_raw"}).
+# @param rowsum a logical variable to check if the input object is raw data (species by sites matrix, \code{rowsum=FALSE}) or iNEXT default input (abundance counts or incidence frequencies, \code{rowsum=TRUE}).
 #' @param size an integer vector of sample sizes (number of individuals or sampling units) for which diversity estimates will be computed. 
 #' If NULL, then diversity estimates will be computed for those sample sizes determined by the specified/default \code{endpoint} and \code{knots} .
 #' @param endpoint an integer specifying the sample size that is the \code{endpoint} for rarefaction/extrapolation. 
@@ -529,39 +530,89 @@ iNEXT.Sam <- function(Spec, t=NULL, q=0, endpoint=2*max(Spec), knots=40, se=TRUE
 #' each knot represents a particular sample size for which diversity estimate will be calculated.  
 #' If the \code{endpoint} is smaller than the reference sample size, then \code{iNEXT()} computes only the rarefaction esimates for approximately K evenly spaced \code{knots}. 
 #' If the \code{endpoint} is larger than the reference sample size, then \code{iNEXT()} computes rarefaction estimates for approximately K/2 evenly spaced \code{knots} between sample size 1 and the reference sample size, and computes extrapolation estimates for approximately K/2 evenly spaced \code{knots} between the reference sample size and the \code{endpoint}.
-#' @param se a logical variable to calculate the bootstrap standard error and 95\% confidence interval.
+#' @param se a logical variable to calculate the bootstrap standard error and \code{conf} confidence interval.
+#' @param conf a positive number < 1 specifying the level of confidence interval, default is 0.95
 #' @param nboot an integer specifying the number of replications.
 #' @return a list of three objects: \code{$DataInfo} for summarizing data information; 
 #' \code{$iNextEst} for showing diversity estimates for rarefied and extrapolated samples along with related statistics;
 #' and \code{$AsyEst} for showing asymptotic diversity estimates along with related statistics.  
 #' @examples
+#' ## example for abundance based data (list of vector)
 #' data(spider)
-#' iNEXT(spider, q=0, datatype="abundance")
+#' out1 <- iNEXT(spider, q=0, datatype="abundance")
+#' out1$DataInfo # showing basic data information.
+#' out1$AsyEst # showing asymptotic diversity estimates.
+#' out1$iNextEst # showing diversity estimates with rarefied and extrapolated.
 #' 
+#' ## example for abundance based data (data.frame)
+#' data(bird)
+#' out2 <- iNEXT(bird, q=0, datatype="abundance")
+#' ggiNEXT(out2)
+#' 
+#' ## example for incidence frequencies based data (list of data.frame)
 #' data(ant)
-#' iNEXT(ant$h500m, q=1, datatype="incidence", size=round(seq(10, 500, length.out=20)), se=FALSE)
+#' t <- round(seq(10, 500, length.out=20))
+#' out3 <- iNEXT(ant$h500m, q=1, datatype="incidence_freq", size=t, se=FALSE)
+#' out3$iNextEst
+#' 
 #' @export
 #' 
-iNEXT <- function(x, q=0, datatype="abundance", size=NULL, endpoint=NULL, knots=40, se=TRUE, nboot=50)
+iNEXT <- function(x, q=0, datatype="abundance", size=NULL, endpoint=NULL, knots=40, se=TRUE, conf=0.95, nboot=50)
 {
-  TYPE <- c("abundance", "incidence")
+  TYPE <- c("abundance", "incidence", "incidence_freq", "incidence_raw")
   if(is.na(pmatch(datatype, TYPE)))
     stop("invalid datatype")
   if(pmatch(datatype, TYPE) == -1)
     stop("ambiguous datatype")
   datatype <- match.arg(datatype, TYPE)
+
+  if(datatype == "incidence"){
+    stop('datatype="incidence" was no longer supported after v2.0.8, 
+         please try datatype="incidence_freq".')  
+  }
+  if(datatype=="incidence_freq") datatype <- "incidence"
+  
+  if(datatype=="incidence_freq") datatype <- "incidence"
+  
+  if(datatype=="incidence_raw"){
+    if(class(x)=="list"){
+      x <- lapply(x, as.incfreq)
+    }else{
+      x <- as.incfreq(x)
+    }
+    datatype <- "incidence"
+  }
+  #   if(rowsum==FALSE){
+  #     if(datatype=="abundance"){
+  #       if(class(x) =="list"){
+  #         x <- lapply(x, as.abucount)
+  #       }else{
+  #         x <- as.abucount(x)
+  #       }
+  #     }else if(datatype=="incidence"){
+  #       if(class(x) =="list"){
+  #         x <- lapply(x, as.incfreq)
+  #       }else{
+  #         x <- as.incfreq(x)
+  #       }
+  #     }
+  #   }
   
   Fun <- function(x, q){
     x <- as.numeric(unlist(x))
-    if(datatype == "abundance")
-      out <- iNEXT.Ind(Spec=x, q=q, m=size, endpoint=ifelse(is.null(endpoint), 2*sum(x), endpoint), knots=knots, se=se, nboot=nboot)
+    if(datatype == "abundance"){
+      if(sum(x)==0) stop("Zero abundance counts in one or more sample sites")
+      out <- iNEXT.Ind(Spec=x, q=q, m=size, endpoint=ifelse(is.null(endpoint), 2*sum(x), endpoint), knots=knots, se=se, nboot=nboot, conf=conf)
+    }
     if(datatype == "incidence"){
       t <- x[1]
       y <- x[-1]
       if(t>sum(y)){
         warning("Insufficient data to provide reliable estimators and associated s.e.") 
       }
-      out <- iNEXT.Sam(Spec=x, q=q, t=size, endpoint=ifelse(is.null(endpoint), 2*max(x), endpoint), knots=knots, se=se, nboot=nboot)  
+      if(sum(x)==0) stop("Zero incidence frequencies in one or more sample sites")
+      
+      out <- iNEXT.Sam(Spec=x, q=q, t=size, endpoint=ifelse(is.null(endpoint), 2*max(x), endpoint), knots=knots, se=se, nboot=nboot, conf=conf)  
     }
     out
   }
@@ -576,9 +627,9 @@ iNEXT <- function(x, q=0, datatype="abundance", size=NULL, endpoint=NULL, knots=
   if(class(x)=="numeric" | class(x)=="integer" | class(x)=="double"){
     out <- do.call("rbind", lapply(q, function(q) Fun(x, q)))
     out[,-(1:3)] <- round(out[,-(1:3)],3)
-    index <- rbind(as.matrix(ChaoSpecies(x, datatype)), 
-                   as.matrix(ChaoEntropy(x, datatype, transform=TRUE)),
-                   as.matrix(EstSimpson(x, datatype, transform=TRUE)))
+    index <- rbind(as.matrix(ChaoSpecies(x, datatype, conf)), 
+                   as.matrix(ChaoEntropy(x, datatype, transform=TRUE, conf)),
+                   as.matrix(EstSimpson(x, datatype, transform=TRUE, conf)))
     rownames(index) <- c("Species Richness", "Shannon diversity", "Simpson diversity")
     
   }else if(class(x)=="matrix" | class(x)=="data.frame"){
@@ -588,12 +639,12 @@ iNEXT <- function(x, q=0, datatype="abundance", size=NULL, endpoint=NULL, knots=
       tmp
     })
     arr <- array(0, dim = c(3, 5, ncol(x)))
-    arr[1,,] <- t(as.matrix(ChaoSpecies(x, datatype)))
-    arr[2,,] <- t(as.matrix(ChaoEntropy(x, datatype, transform=TRUE)))
-    arr[3,,] <- t(as.matrix(EstSimpson(x, datatype, transform=TRUE)))  
+    arr[1,,] <- t(as.matrix(ChaoSpecies(x, datatype, conf)))
+    arr[2,,] <- t(as.matrix(ChaoEntropy(x, datatype, transform=TRUE, conf)))
+    arr[3,,] <- t(as.matrix(EstSimpson(x, datatype, transform=TRUE, conf)))  
     dimnames(arr)[[3]] <- names(x)
     dimnames(arr)[[1]] <- c("Species richness", "Shannon diversity", "Simpson diversity")
-    dimnames(arr)[[2]] <- c("Observed", "Estimator", "Est_s.e.", "95% Lower", "95% Upper")
+    dimnames(arr)[[2]] <- c("Observed", "Estimator", "Est_s.e.", "Lower_CI", "Upper_CI")
     index <- ftable(arr, row.vars = c(3,1))
     
   }else if(class(x)=="list"){
@@ -604,12 +655,12 @@ iNEXT <- function(x, q=0, datatype="abundance", size=NULL, endpoint=NULL, knots=
     })
     
     arr <- array(0, dim = c(3, 5, length(x)))
-    arr[1,,] <- t(as.matrix(ChaoSpecies(x, datatype)))
-    arr[2,,] <- t(as.matrix(ChaoEntropy(x, datatype, transform=TRUE)))
-    arr[3,,] <- t(as.matrix(EstSimpson(x, datatype, transform=TRUE)))  
+    arr[1,,] <- t(as.matrix(ChaoSpecies(x, datatype, conf)))
+    arr[2,,] <- t(as.matrix(ChaoEntropy(x, datatype, transform=TRUE, conf)))
+    arr[3,,] <- t(as.matrix(EstSimpson(x, datatype, transform=TRUE, conf)))  
     dimnames(arr)[[3]] <- names(x)
     dimnames(arr)[[1]] <- c("Species richness", "Shannon diversity", "Simpson diversity")
-    dimnames(arr)[[2]] <- c("Observed", "Estimator", "Est_s.e.", "95% Lower", "95% Upper")
+    dimnames(arr)[[2]] <- c("Observed", "Estimator", "Est_s.e.", "Lower_CI", "Upper_CI")
     index <- ftable(arr, row.vars = c(3,1))
   }else{
     stop("invalid class of x, x should be a object of numeric, matrix, data.frame, or list")
@@ -636,9 +687,9 @@ iNEXT <- function(x, q=0, datatype="abundance", size=NULL, endpoint=NULL, knots=
 # @return a vector of the rank of estimated relative abundance distribution or detection probability
 # @examples 
 # data(spider)
-# EstDis(spider$Girdled, datatype="incidence")
+# EstDis(spider$Girdled, datatype="abundance")
 # data(ant)
-# EstDis(ant$h50m, datatype="incidence")
+# EstDis(ant$h50m, datatype="incidence_freq")
 # @export
 EstDis <- function(x, datatype=c("abundance", "incidence")){
   datatype <- match.arg(datatype)
@@ -647,344 +698,6 @@ EstDis <- function(x, datatype=c("abundance", "incidence")){
   out 
 }
 
-
-#
-#
-###############################################
-#' ggplot2 extension for an iNEXT object
-#' 
-#' \code{ggiNEXT}: the \code{\link{ggplot2}} extension for \code{\link{iNEXT}} object to plot sample-size- and coverage-based rarefaction/extrapolation curves along with a bridging sample completeness curve.
-#' @param x an \code{iNEXT} object computed by \code{\link{iNEXT}}.
-#' @param type three types of plots: sample-size-based rarefaction/extrapolation curve (\code{type = 1}); 
-#' sample completeness curve (\code{type = 2}); coverage-based rarefaction/extrapolation curve (\code{type = 3}).                 
-#' @param se a logical variable to display confidence interval around the estimated sampling curve.
-#' @param facet.var create a separate plot for each value of a specified variable: 
-#'  no separation \cr (\code{facet.var="none"}); 
-#'  a separate plot for each diversity order (\code{facet.var="order"}); 
-#'  a separate plot for each site (\code{facet.var="site"}); 
-#'  a separate plot for each combination of order x site (\code{facet.var="both"}).              
-#' @param color.var create curves in different colors for values of a specified variable:
-#'  all curves are in the same color (\code{color.var="none"}); 
-#'  use different colors for diversity orders (\code{color.var="order"}); 
-#'  use different colors for sites (\code{color.var="site"}); 
-#'  use different colors for combinations of order x site (\code{color.var="both"}).  
-#' @param grey a logical variable to display grey and white ggplot2 theme. 
-#' @return a ggplot2 object
-#' @examples
-#' data(spider)
-#' # single-assemblage abundance data
-#' out1 <- iNEXT(spider$Girdled, q=0, datatype="abundance")
-#' ggiNEXT(out1, type=1)
-#' ggiNEXT(out1, type=2)
-#' ggiNEXT(out1, type=3)
-#' 
-#'\dontrun{
-#' # single-assemblage incidence data with three orders q
-#' data(ant)
-#' size <- round(seq(10, 500, length.out=20))
-#' out2 <- iNEXT(ant$h500m, q=c(0,1,2), datatype="incidence", size=size, se=FALSE)
-#' ggiNEXT(out2, se=FALSE, color.var="order")
-#' 
-#' # multiple-assemblage abundance data with three orders q
-#' out3 <- iNEXT(spider, q=c(0,1,2), datatype="abundance")
-#' ggiNEXT(out3, facet.var="site", color.var="order")
-#' ggiNEXT(out3, facet.var="both", color.var="both")
-#'}
-#' @export
-
-ggiNEXT <- function(x, type=1, se=TRUE, facet.var="none", color.var="site", grey=FALSE){
-  if(class(x) != "iNEXT") 
-    stop("invalid object class")
-  TYPE <-  c(1, 2, 3)
-  SPLIT <- c("none", "order", "site", "both")
-  if(is.na(pmatch(type, TYPE)) | pmatch(type, TYPE) == -1)
-    stop("invalid plot type")
-  if(is.na(pmatch(facet.var, SPLIT)) | pmatch(facet.var, SPLIT) == -1)
-    stop("invalid facet variable")
-  if(is.na(pmatch(color.var, SPLIT)) | pmatch(color.var, SPLIT) == -1)
-    stop("invalid color variable")
-  
-  type <- pmatch(type, 1:3)
-  facet.var <- match.arg(facet.var, SPLIT)
-  color.var <- match.arg(color.var, SPLIT)
-  if(facet.var=="order") color.var <- "site"
-  if(facet.var=="site") color.var <- "order"
-  
-  y <- method <- site <- shape <- y.lwr <- y.upr <- NULL
-  site <<- NULL
-  z <- x$iNextEst
-  if(class(z) == "list"){
-    z <- data.frame(do.call("rbind", z), site=rep(names(z), sapply(z, nrow)))
-    rownames(z) <- NULL
-  }else{
-    z$site <- ""
-  }
-  
-  
-  if("qD.95.LCL" %in% names(z) == FALSE & se) {
-    warning("invalid se setting, the iNEXT object do not consist confidence interval")
-    se <- FALSE
-  }else if("qD.95.LCL" %in% names(z) & se) {
-    se <- TRUE
-  }else{
-    se <- FALSE
-  }
-  
-  
-  if(type==1L) {
-    z$x <- z[,1]
-    z$y <- z$qD
-    if(se){
-      z$y.lwr <- z$qD.95.LCL
-      z$y.upr <- z$qD.95.UCL
-    }
-  }else if(type==2L){
-    if(length(unique(z$order))>1){
-      z <- subset(z, order==unique(z$order)[1])
-    }
-    z$x <- z[,1]
-    z$y <- z$SC
-    if(se){
-      z$y.lwr <- z$SC.95.LCL
-      z$y.upr <- z$SC.95.UCL
-    }
-  }else if(type==3L){
-    z$x <- z$SC
-    z$y <- z$qD
-    if(se){
-      z$y.lwr <- z$qD.95.LCL
-      z$y.upr <- z$qD.95.UCL
-    }
-  }
-  
-  if(color.var=="none"){
-    if(levels(factor(z$order))>1 & "site"%in%names(z)){
-      warning("invalid color.var setting, the iNEXT object consists multiple sites and orders, change setting as both")
-      color.var <- "both"
-      z$col <- z$shape <- paste(z$site, z$order, sep="-")
-      
-    }else if("site"%in%names(z)){
-      warning("invalid color.var setting, the iNEXT object consists multiple orders, change setting as order")
-      color.var <- "site"
-      z$col <- z$shape <- z$site
-    }else if(levels(factor(z$order))>1){
-      warning("invalid color.var setting, the iNEXT object consists multiple sites, change setting as site")
-      color.var <- "order"
-      z$col <- z$shape <- factor(z$order)
-    }else{
-      z$col <- z$shape <- rep(1, nrow(z))
-    }
-  }else if(color.var=="order"){     
-    z$col <- z$shape <- factor(z$order)
-  }else if(color.var=="site"){
-    if(!"site"%in%names(z)){
-      warning("invalid color.var setting, the iNEXT object do not consist multiple sites, change setting as order")
-      z$col <- z$shape <- factor(z$order)
-    }
-    z$col <- z$shape <- z$site
-  }else if(color.var=="both"){
-    if(!"site"%in%names(z)){
-      warning("invalid color.var setting, the iNEXT object do not consist multiple sites, change setting as order")
-      z$col <- z$shape <- factor(z$order)
-    }
-    z$col <- z$shape <- paste(z$site, z$order, sep="-")
-  }
-  
-  
-  g <- ggplot(z, aes(x=x, y=y, colour=factor(col))) + 
-    geom_point(aes(shape=shape), size=5, data=subset(z, method=="observed"))
-  
-  g <- g + geom_line(aes(linetype=factor(method, c("interpolated", "extrapolated"), c("interpolation", "extrapolation"))), size=1.5) +
-    guides(linetype=guide_legend(title="Method"), 
-           colour=guide_legend(title="Guides"), 
-           fill=guide_legend(title="Guides"), 
-           shape=guide_legend(title="Guides")) + 
-    theme(legend.position = "bottom", 
-          legend.title=element_blank(),
-          text=element_text(size=18)) 
-  
-  if(type==2L) {
-    g <- g + labs(x="Number of sampling units", y="Sample coverage")
-    if(names(x$DataInfo)[1]=="n") g <- g + labs(x="Number of individuals", y="Sample coverage")
-  }
-  else if(type==3L) {
-    g <- g + labs(x="Sample coverage", y="Species diversity")
-  }
-  else {
-    g <- g + labs(x="Number of sampling units", y="Species diversity")
-    if(names(x$DataInfo)[1]=="n") g <- g + labs(x="Number of individuals", y="Species diversity")
-  }
-  
-  if(se)
-    g <- g + geom_ribbon(aes(ymin=y.lwr, ymax=y.upr, fill=factor(col), colour=NULL), alpha=0.2)
-  
-  
-  if(facet.var=="order"){
-    if(length(levels(factor(z$order))) == 1 & type!=2){
-      warning("invalid facet.var setting, the iNEXT object do not consist multiple orders.")      
-    }else{
-      g <- g + facet_wrap(~order, nrow=1)
-      if(color.var=="both"){
-        g <- g + guides(colour=guide_legend(title="Guides", ncol=length(levels(factor(z$order))), byrow=TRUE),
-                        fill=guide_legend(title="Guides"))
-      }
-    }
-  }
-  
-  if(facet.var=="site"){
-    if(!"site"%in%names(z)) {
-      warning("invalid facet.var setting, the iNEXT object do not consist multiple sites.")
-    }else{
-      g <- g + facet_wrap(~site, nrow=1)
-      if(color.var=="both"){
-        g <- g + guides(colour=guide_legend(title="Guides", nrow=length(levels(factor(z$order)))),
-                        fill=guide_legend(title="Guides"))
-      }
-    }
-  }
-  
-  if(facet.var=="both"){
-    if(length(levels(factor(z$order))) == 1 | !"site"%in%names(z)){
-      warning("invalid facet.var setting, the iNEXT object do not consist multiple sites or orders.")
-    }else{
-      g <- g + facet_wrap(site~order) 
-      if(color.var=="both"){
-        g <- g +  guides(colour=guide_legend(title="Guides", nrow=length(levels(factor(z$site))), byrow=TRUE),
-                         fill=guide_legend(title="Guides"))
-      }
-    }
-  }
-  
-  if(grey){
-    g <- g + theme_bw(base_size = 18) +
-      scale_fill_grey(start = 0, end = .4) +
-      scale_colour_grey(start = .2, end = .2) +
-      labs(x = "Number of individuals") +
-      guides(linetype=guide_legend(title="Method"), 
-             colour=guide_legend(title="Guides"), 
-             fill=guide_legend(title="Guides"), 
-             shape=guide_legend(title="Guides")) +
-      theme(legend.position="bottom",
-            legend.title=element_blank())
-  }
-  return(g)
-  
-}
-
-# 
-# plot.iNEXT <- function(x, type=1, se=TRUE, show.legend=TRUE, show.main=TRUE, col=NULL,...){
-# 
-#   if(class(x) != "iNEXT") 
-#     stop("invalid object class")
-#   TYPE <-  c(1, 2, 3)
-#   SPLIT <- c("none", "order", "site", "both")
-#   if(is.na(pmatch(type, TYPE)) | pmatch(type, TYPE) == -1)
-#     stop("invalid plot type")
-#   
-#   type <- pmatch(type, 1:3)
-#   
-#   y <- method <- site <- shape <- y.lwr <- y.upr <- NULL
-#   site <<- NULL
-#   
-#   z <- x$Accumulation
-#   if(class(z) == "list"){
-#     z <- data.frame(do.call("rbind", z), site=rep(names(z), sapply(z, nrow)))
-#     rownames(z) <- NULL
-#   }else{
-#     z$site <- ""
-#     z$site <- factor(z$site)
-#   }
-#   
-#   if("qD.95.LCL" %in% names(z) == FALSE & se) {
-#     warning("invalid se setting, the iNEXT object do not consist confidence interval")
-#     se <- FALSE
-#   }else if("qD.95.LCL" %in% names(z) & se) {
-#     se <- TRUE
-#   }else{
-#     se <- FALSE
-#   }
-#   
-#   if(type==1L) {
-#     z$x <- z[,1]
-#     z$y <- z$qD
-#     if(!is.null(xlab)) xlab <- ifelse(names(x$DataInfo)[1]=="n", "Number of individuals", "Number of sampling units")
-#     if(!is.null(ylab)) ylab <- "Species diversity"
-#     if(se){
-#       z$y.lwr <- z$qD.95.LCL
-#       z$y.upr <- z$qD.95.UCL
-#     }
-#   }else if(type==2L){
-#     if(length(unique(z$order))>1){
-#       z <- subset(z, order==unique(z$order)[1])
-#     }
-#     z$x <- z[,1]
-#     z$y <- z$SC
-#     if(!is.null(xlab)) xlab <- ifelse(names(x$DataInfo)[1]=="n", "Number of individuals", "Number of sampling units")
-#     if(!is.null(ylab)) ylab <- "Sample coverage"
-#     if(se){
-#       z$y.lwr <- z$SC.95.LCL
-#       z$y.upr <- z$SC.95.UCL
-#     }
-#   }else if(type==3L){
-#     z$x <- z$SC
-#     z$y <- z$qD
-#     if(!is.null(xlab)) xlab <- "Sample coverage"
-#     if(!is.null(ylab)) ylab <- "Species diversity"
-#     if(se){
-#       z$y.lwr <- z$qD.95.LCL
-#       z$y.upr <- z$qD.95.UCL
-#     }
-#   }
-#   
-#   gg_color_hue <- function(n) {
-#     hues = seq(15, 375, length=n+1)
-#     hcl(h=hues, l=65, c=100)[1:n]
-#   }
-#   
-#   SITE <- levels(z$site)
-#   ORDER <- unique(z$order)
-#   
-#   if(is.null(col)){
-#     col <- gg_color_hue(length(SITE))
-#   }else{
-#     col <- rep(col,length(SITE))[1:length(SITE)]
-#   }
-#   pch <- (16+1:length(SITE))%%25  
-#   
-#   for(j in 1:length(ORDER)){
-#     if(se==TRUE){
-#       tmp.j <- filter(z, order==ORDER[j]) %>% 
-#         select(site, order, method, x, y, y.lwr, y.upr)
-#       plot(y.upr~x, data=tmp.j, type="n", xlab="", ylab="", ...)
-#     }else{
-#       tmp.j <- filter(z, order==ORDER[j]) %>% 
-#         select(site, order, method, x, y)
-#       plot(y~x, data=tmp.j, type="n", xlab="", ylab="", ...)
-#     }
-#     
-#     for(i in 1:length(SITE)){
-#       tmp <- filter(tmp.j, site==SITE[i])
-#       if(se==TRUE){
-#         conf.reg(x=tmp$x, LCL=tmp$y.lwr, UCL=tmp$y.upr, border=NA, col=adjustcolor(col[i], 0.25))
-#       }
-#       lines(y~x, data=filter(tmp, method=="interpolated"), lty=1, lwd=2, col=col[i])
-#       lines(y~x, data=filter(tmp, method=="extrapolated"), lty=2, lwd=2, col=col[i])
-#       points(y~x, data=filter(tmp, method=="observed"), pch=pch[i], cex=2, col=col[i])
-#       
-#     }
-#     if(show.legend==TRUE){
-#       if(type==3L){
-#         legend("topleft", legend=paste(SITE), col=col, lty=1, lwd=2, pch=pch, cex=1, bty="n")
-#       }else{
-#         legend("bottomright", legend=paste(SITE), col=col, lty=1, lwd=2, pch=pch, cex=1, bty="n")
-#       }
-#     }
-#     title(xlab=xlab, ylab=ylab)
-#     if(show.main==TRUE) title(main=paste("Order q =", ORDER[j]))
-#     par(ask=TRUE)
-#   }
-#   par(ask=FALSE)
-# }
 
 
 
@@ -998,40 +711,40 @@ ggiNEXT <- function(x, type=1, se=TRUE, facet.var="none", color.var="site", grey
 # Girdled <- c(46, 22, 17, 15, 15, 9, 8, 6, 6, 4, 2, 2, 2, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1)
 # Logged <- c(88, 22, 16, 15, 13, 10, 8, 8, 7, 7, 7, 5, 4, 4, 4, 3, 3, 3, 3, 2, 2, 2, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1)
 # spider <- list(Girdled=Girdled, Logged=Logged)
-# 
-# ##
-# ##
-# ###########################################
-# ## Example sample-based data, tropical ant species data collected by Longino and Colwell (2011)
-# ## Note that first cell is number of total samples, and others are species incidence-based frequency.
-# ##
-# 
-# ## 50m
+
+##
+##
+###########################################
+## Example sample-based data, tropical ant species data collected by Longino and Colwell (2011)
+## Note that first cell is number of total samples, and others are species incidence-based frequency.
+##
+
+## 50m
 # y50 <- c(599,rep(1,49),rep(2,23),rep(3,18),rep(4,14),rep(5,9),rep(6,10),rep(7,4),
 #          rep(8,8),rep(9,6),rep(10,2),rep(11,1),12,12,13,13,rep(14,5),15,15,
 #          rep(16,4),17,17,17,18,18,19,19,20,20,20,21,22,23,23,25,27,27,29,30,30,
 #          31,33,39,40,43,46,46,47,48,51,52,52,56,56,58,58,61,61,65,69,72,77,79,82,
 #          83,84,86,91,95,97,98,98,106,113,124,126,127,128,129,129,182,183,186,195,
 #          222,236,263,330)
-# 
-# ##500m
+
+##500m
 # y500 <- c(230,rep(1,71),rep(2,34),rep(3,12),rep(4,14),rep(5,9),rep(6,11),rep(7,8),
 #           rep(8,4),rep(9,7),rep(10,5),rep(11,2),12,12,12,13,13,13,13,14,14,15,
 #           16,16,17,17,17,17,18,19,20,21,21,23,24,25,25,25,26,27,30,31,31,32,32,
 #           33,34,36,37,38,38,38,38,39,39,41,42,43,44,45,46,47,49,52,52,53,54,56,
 #           60,60,65,73,78,123,131,133)
-# 
-# ##1070m
+
+##1070m
 # y1070 <- c(150,rep(1,28),rep(2,16),rep(3,13),rep(4,3),rep(5,1),rep(6,3),rep(7,6),
 #            rep(8,1),rep(9,1),rep(10,1),rep(11,4),12,12,12,13,13,13,13,14,15,
 #            16,16,16,16,18,19,19,21,22,23,24,25,25,25,26,30,31,31,31,32,34,36,
 #            38,39,43,43,45,45,46,54,60,68,74,80,96,99)
-# ##1500m
+##1500m
 # y1500 <- c(200,rep(1,13),rep(2,4),rep(3,2),rep(4,2),rep(5,4),rep(6,2),rep(9,4),
 #            rep(11,2),rep(17,2),18,19,23,23,24,25,25,25,29,30,32,33,43,50,53,
 #            73,74,76,79,113,144)
-# 
-# ##2000m
+
+##2000m
 # y2000=c(200,1,2,2,3,4,8,8,13,15,19,23,34,59,80)
 # 
 # ant <- list(h50m=y50, h500m=y500, h1070m=y1070, h1500m=y1500, h2000m=y2000)

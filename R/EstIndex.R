@@ -3,24 +3,35 @@
 ###########################################
 #' Exhibit basic data information
 #' 
-#' \code{DataInfo}: exhibits basic data information.
+#' \code{DataInfo}: exhibits basic data information
 #' 
 #' @param x a vector/matrix/list of species abundances or incidence frequencies.\cr If \code{datatype = "incidence"}, 
 #' then the first entry of the input data must be total number of sampling units, followed by species incidence frequencies.
-#' @param datatype data type of input data: individual-based abundance data (\code{datatype = "abundance"}) or 
-#' sampling-unit-based incidence data (\code{datatype = "incidence"}).
+#' @param datatype data type of input data: individual-based abundance data (\code{datatype = "abundance"}),  
+#' sampling-unit-based incidence frequencies data (\code{datatype = "incidence_freq"}) or species by sampling-units incidence matrix (\code{datatype = "incidence_raw"}).
 #' @return a data.frame of basic data information including sample size, observed species richness, sample coverage estimate, and the first ten abundance/incidence frequency counts.
 #' @examples 
 #' data(spider)
 #' DataInfo(spider, datatype="abundance")
 #' @export
 DataInfo <- function(x, datatype="abundance"){
-  TYPE <- c("abundance", "incidence")
+  TYPE <- c("abundance", "incidence", "incidence_freq", "incidence_raw")
   if(is.na(pmatch(datatype, TYPE)))
-    stop("invalid data type")
+    stop("invalid datatype")
   if(pmatch(datatype, TYPE) == -1)
-    stop("ambiguous data type")
+    stop("ambiguous datatype")
   datatype <- match.arg(datatype, TYPE)
+  
+  if(datatype=="incidence_freq") datatype <- "incidence"
+  
+  if(datatype=="incidence_raw"){
+    if(class(x)=="list"){
+      x <- lapply(x, as.incfreq)
+    }else{
+      x <- as.incfreq(x)
+    }
+    datatype <- "incidence"
+  }
   
   Fun.abun <- function(x){
     n <- sum(x)
@@ -56,7 +67,14 @@ DataInfo <- function(x, datatype="abundance"){
     } else if(class(x) == "matrix" | class(x) == "data.frame"){
       out <- t(apply(as.matrix(x), 2, Fun.abun))  
     }
-    colnames(out) <-  c("n", "S.obs", "SC", paste("f",1:10, sep=""))
+    if(nrow(out) > 1){
+      out <- data.frame(site=rownames(out), out)
+      colnames(out) <-  c("site", "n", "S.obs", "SC", paste("f",1:10, sep=""))
+      rownames(out) <- NULL
+    }else{
+      out <- data.frame(site="site.1", out)
+      colnames(out) <-  c("site", "n", "S.obs", "SC", paste("f",1:10, sep=""))
+    }
     as.data.frame(out)
   }else if(datatype == "incidence"){
     if(class(x) == "numeric" | class(x) == "integer"){
@@ -66,7 +84,14 @@ DataInfo <- function(x, datatype="abundance"){
     } else if(class(x) == "matrix" | class(x) == "data.frame"){
       out <- t(apply(as.matrix(x), 2, Fun.ince))  
     }
-    colnames(out) <-  c("T", "U", "S.obs", "SC", paste("Q",1:10, sep=""))
+    if(nrow(out) > 1){
+      out <- data.frame(site=rownames(out), out)
+      colnames(out) <-  c("site","T", "U", "S.obs", "SC", paste("Q",1:10, sep=""))
+      rownames(out) <- NULL
+    }else{
+      out <- data.frame(site="site.1", out)
+      colnames(out) <-  c("site","T", "U", "S.obs", "SC", paste("Q",1:10, sep=""))
+    }
     as.data.frame(out)
   }
 }
@@ -79,32 +104,44 @@ DataInfo <- function(x, datatype="abundance"){
 ###########################################
 #' Estimation of species richness
 #' 
-#' \code{ChaoSpecies}: estimation of species richness based on the methods proposed in Chao (1984, 1987).
+#' \code{ChaoRichness}: estimation of species richness based on the methods proposed in Chao (1984, 1987)
 #' 
 #' @param x a vector of species abundances or incidence frequencies. If \code{datatype = "incidence"}, 
 #' then the first entry of the input data must be total number of sampling units, followed by species incidence frequencies. 
-#' @param datatype data type of input data: individual-based abundance data (\code{datatype = "abundance"}) or 
-#' sampling-unit-based incidence data (\code{datatype = "incidence"}).
+#' @param datatype data type of input data: individual-based abundance data (\code{datatype = "abundance"}),  
+#' sampling-unit-based incidence frequencies data (\code{datatype = "incidence_freq"}) or species by sampling-units incidence matrix (\code{datatype = "incidence_raw"}).
 #' @param conf a positive number \eqn{\le} 1 specifying the level of confidence interval. 
 #' @return A vector of observed species richness, species richness estimate, s.e. and the associated confidence interval.
-#' @seealso \code{\link{ChaoEntropy}, \link{EstSimpson}}
+#' @seealso \code{\link{ChaoShannon}, \link{ChaoSimpson}}
 #' @examples 
 #' data(spider)
-#' ChaoSpecies(spider$Girdled, datatype="abundance")
+#' ChaoRichness(spider$Girdled, datatype="abundance")
 #' @references 
 #' Chao, A. (1984) Nonparametric estimation of the number of classes in a population. Scandinavian Journal of Statistics, 11, 265-270.\cr\cr
 #' Chao, A. (1987) Estimating the population size for capture-recapture data with unequal catchability. Biometrics, 43, 783-791.
 #' 
 #' @export
 
-ChaoSpecies=function(x, datatype="abundance", conf=0.95){  
+ChaoRichness=function(x, datatype="abundance", conf=0.95){  
   
-  TYPE <- c("abundance", "incidence")
+  TYPE <- c("abundance", "incidence", "incidence_freq", "incidence_raw")
   if(is.na(pmatch(datatype, TYPE)))
     stop("invalid data type")
   if(pmatch(datatype, TYPE) == -1)
     stop("ambiguous data type")
   datatype <- match.arg(datatype, TYPE)
+  
+  if(datatype=="incidence_freq") datatype <- "incidence"
+  
+  if(datatype=="incidence_raw"){
+    if(class(x)=="list"){
+      x <- lapply(x, as.incfreq)
+    }else{
+      x <- as.incfreq(x)
+    }
+    datatype <- "incidence"
+  }
+  
   
   if (!is.numeric(conf) || conf > 1 || conf < 0) {
     warning("\"conf\"(confidence level) must be a numerical value between 0 and 1, We use \"conf\" = 0.95 to calculate!")
@@ -204,12 +241,23 @@ BootstrapFun <- function(x, FunName, datatype, B){
       stop("invalid data structure")
   }
   
-  TYPE <- c("abundance", "incidence")
+  TYPE <- c("abundance", "incidence", "incidence_freq", "incidence_raw")
   if(is.na(pmatch(datatype, TYPE)))
     stop("invalid data type")
   if(pmatch(datatype, TYPE) == -1)
     stop("ambiguous data type")
   datatype <- match.arg(datatype, TYPE)
+  
+  if(datatype=="incidence_freq") datatype <- "incidence"
+  
+  if(datatype=="incidence_raw"){
+    if(class(x)=="list"){
+      x <- lapply(x, as.incfreq)
+    }else{
+      x <- as.incfreq(x)
+    }
+    datatype <- "incidence"
+  }
   
   BootstrapFun.abun <- function(x, FunName, datatype, B) {
     n <- sum(x)
@@ -264,33 +312,45 @@ BootstrapFun <- function(x, FunName, datatype, B){
 ###########################################
 #' Estimation of Shannon entropy/diversity
 #' 
-#' \code{ChaoEntropy}: estimation of Shannon entropy or transformed Shannon diversity based on the method proposed by Chao et al. (2013).
+#' \code{ChaoShannon}: estimation of Shannon entropy or transformed Shannon diversity based on the method proposed by Chao et al. (2013)
 #' 
 #' @param x a vector of species abundances or incidence frequencies. If \code{datatype = "incidence"}, 
 #' then the first entry of the input data must be total number of sampling units, followed by species incidence frequencies. 
-#' @param datatype data type of input data: individual-based abundance data (\code{datatype = "abundance"}) or sampling-unit-based incidence data (\code{datatype = "incidence"}).
+#' @param datatype data type of input data: individual-based abundance data (\code{datatype = "abundance"}),  
+#' sampling-unit-based incidence frequencies data (\code{datatype = "incidence_freq"}) or species by sampling-units incidence matrix (\code{datatype = "incidence_raw"}).
 #' @param transform a \code{logical} constant to compute traditional Shannon entropy index (\code{transform=FALSE}) or the transformed Shannon diversity (\code{transform=TRUE}). 
 #' @param conf a positive number \eqn{\le} 1 specifying the level of confidence interval. 
 #' @param B an integer specifying the number of bootstrap replications.
 #' @return A vector of observed Shannon entropy/diversity, estimate of entropy/diversity, s.e. and the associated confidence interval.
-#' @seealso \code{\link{ChaoSpecies}, \link{EstSimpson}} 
+#' @seealso \code{\link{ChaoRichness}, \link{ChaoSimpson}} 
 #' @examples 
 #' data(spider)
-#' ChaoEntropy(spider$Girdled, datatype="abundance")
+#' ChaoShannon(spider$Girdled, datatype="abundance")
 #' @references 
 #' Chao, A., Wang, Y.T. & Jost, L. (2013) Entropy and the species accumulation curve: a novel entropy estimator via discovery rates of new species. Methods in Ecology and Evolution, 4, 1091-1100.
 #'
 #' @export
 
 
-ChaoEntropy <- function(x, datatype="abundance", transform=FALSE, conf=0.95, B=200) {
+ChaoShannon <- function(x, datatype="abundance", transform=FALSE, conf=0.95, B=200) {
       
-  TYPE <- c("abundance", "incidence")
+  TYPE <- c("abundance", "incidence", "incidence_freq", "incidence_raw")
   if(is.na(pmatch(datatype, TYPE)))
     stop("invalid data type")
   if(pmatch(datatype, TYPE) == -1)
     stop("ambiguous data type")
   datatype <- match.arg(datatype, TYPE)
+  
+  if(datatype=="incidence_freq") datatype <- "incidence"
+  
+  if(datatype=="incidence_raw"){
+    if(class(x)=="list"){
+      x <- lapply(x, as.incfreq)
+    }else{
+      x <- as.incfreq(x)
+    }
+    datatype <- "incidence"
+  }
   
   if(!is.numeric(conf) || conf > 1 || conf < 0){
     warning("\"conf\"(confidence level) must be a numerical value between 0 and 1, We use \"conf\" = 0.95 to calculate!")
@@ -402,33 +462,45 @@ ChaoEntropy <- function(x, datatype="abundance", transform=FALSE, conf=0.95, B=2
 ###########################################
 #' Estimation of Gini-Simpson index or Simpson diversity
 #' 
-#' \code{EstSimpson}: estimation of Gini-Simpson index or the transformed Simpson diversity based on the methods proposed in Good (1953) and Chao et al. (2014).
+#' \code{ChaoSimpson}: estimation of Gini-Simpson index or the transformed Simpson diversity based on the methods proposed in Good (1953) and Chao et al. (2014)
 #' 
 #' @param x a vector of species abundances or incidence frequencies. If \code{datatype = "incidence"}, 
 #' then the first entry of the input data must be total number of sampling units, followed by species incidence frequencies.
-#' @param datatype data type of input data: individual-based abundance data (\code{datatype = "abundance"}) or sampling-unit-based incidence data (\code{datatype = "incidence"}).
+#' @param datatype data type of input data: individual-based abundance data (\code{datatype = "abundance"}),  
+#' sampling-unit-based incidence frequencies data (\code{datatype = "incidence_freq"}) or species by sampling-units incidence matrix (\code{datatype = "incidence_raw"}).
 #' @param transform a \code{logical} constant to compute traditional Gini-Simpson index (\code{transform=FALSE}) or the transformed Simpson diversity (\code{transform=TRUE}). 
 #' @param conf a positive number \eqn{\le} 1 specifying the level of confidence interval. 
 #' @param B an integer specifying the number of bootstrap replications.
-#' @return a vector of observed Gini-Simpson index/diversity, estimate of index/diversity, s.e. and the associated confidence interval.
-#' @seealso \code{\link{ChaoSpecies}, \link{ChaoEntropy}}
+#' @return a vector of observed Gini-Simpson index/diversity, index/diversity estimator, s.e. and the associated confidence interval.
+#' @seealso \code{\link{ChaoRichness}, \link{ChaoShannon}}
 #' @examples 
 #' data(spider)
-#' EstSimpson(spider$Girdled, datatype="abundance")
+#' ChaoSimpson(spider$Girdled, datatype="abundance")
 #' @references
 #' Chao, A., Gotelli, N.J., Hsieh, T.C., Sander, E.L., Ma, K.H., Colwell, R.K. & Ellison, A.M. (2014) Rarefaction and extrapolation with Hill numbers: a framework for sampling and estimation in species diversity studies. Ecological Monographs, 84, 45-67.\cr\cr 
 #' Good, I.J. (1953) The population frequencies of species and the estimation of population parameters. Biometrika, 40, 237-264.
 #' 
 #' @export
 
-EstSimpson <- function(x, datatype="abundance", transform=FALSE, conf=0.95, B=200) {
+ChaoSimpson <- function(x, datatype="abundance", transform=FALSE, conf=0.95, B=200) {
     
-  TYPE <- c("abundance", "incidence")
+  TYPE <- c("abundance", "incidence", "incidence_freq", "incidence_raw")
   if(is.na(pmatch(datatype, TYPE)))
     stop("invalid data type")
   if(pmatch(datatype, TYPE) == -1)
     stop("ambiguous data type")
   datatype <- match.arg(datatype, TYPE)
+  
+  if(datatype=="incidence_freq") datatype <- "incidence"
+  
+  if(datatype=="incidence_raw"){
+    if(class(x)=="list"){
+      x <- lapply(x, as.incfreq)
+    }else{
+      x <- as.incfreq(x)
+    }
+    datatype <- "incidence"
+  }
   
   if(!is.numeric(conf) || conf > 1 || conf < 0){
     warning("\"conf\"(confidence level) must be a numerical value between 0 and 1, We use \"conf\" = 0.95 to calculate!")
@@ -460,7 +532,7 @@ EstSimpson <- function(x, datatype="abundance", transform=FALSE, conf=0.95, B=20
       Q1 <- sum(y==1)
       a <- sum(choose(y,2)/choose(t,2))
       b <- (sum(y %*% t(y)) - sum(diag(y %*% t(y))))/t^2
-      if(Q1!=t){
+      if(sum(y)!=Q1){
         est <- 1-a/(a+b)
       }else{
         est <- 1-2/t/(t+1)
@@ -517,3 +589,15 @@ EstSimpson <- function(x, datatype="abundance", transform=FALSE, conf=0.95, B=20
   }
   return(out)
 }
+
+#' @export
+#' @rdname ChaoRichness
+ChaoSpecies <- ChaoRichness
+
+#' @export
+#' @rdname ChaoShannon
+ChaoEntropy <- ChaoShannon
+
+#' @export
+#' @rdname ChaoSimpson
+EstSimpson <- ChaoSimpson
