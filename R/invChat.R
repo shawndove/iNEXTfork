@@ -293,9 +293,15 @@ estimateD <- function(x, datatype="abundance", base="size", level=NULL){
   base <- match.arg(base, BASE)
   
   if(base=="size"){
-    invSize(x, datatype, size=level)
+    tmp <- invSize(x, datatype, size=level)
+    tmp <- cbind(Site=rownames(tmp), tmp)
+    rownames(tmp) <- NULL
+    tmp
   }else if(base=="coverage"){
-    invChat(x, datatype, C=level)
+    tmp <- invChat(x, datatype, C=level)
+    tmp <- cbind(Site=rownames(tmp), tmp)
+    rownames(tmp) <- NULL
+    tmp
   }
 }
 
@@ -317,14 +323,14 @@ estimateD <- function(x, datatype="abundance", base="size", level=NULL){
 #' @param x a \code{data.frame} or \code{matirx} of species by sites presence-absence matrix.
 #' @return a \code{vector} of species incidence frequencies, the first entry of the input data must be total number of sampling units.
 #' @examples
-#' data(plant)
-#' lapply(plant, as.incfreq)
+#' data(ciliates)
+#' lapply(ciliates, as.incfreq)
 #' 
 #' @export
 #' 
 as.incfreq <- function(x){
   if(class(x) == "data.frame" | class(x) == "matrix"){
-    a <- unique(c(unlist(x)))
+    a <- sort(as.numeric(unique(c(unlist(x)))))
     if(!identical(a, c(0,1))){
       warning("Invalid data type, the element of species by sites presence-absence matrix should be 0 or 1. Set nonzero elements as 1.")
       x <- (x > 0)
@@ -349,8 +355,8 @@ as.incfreq <- function(x){
 #' @param x a \code{data.frame} or \code{matirx} of species by sites matrix.
 #' @return a \code{vector} of species abundance row-sum counts.
 #' @examples
-#' data(plant)
-#' lapply(plant, as.abucount)
+#' data(ciliates)
+#' lapply(ciliates, as.abucount)
 #' 
 #' @export
 #' 
