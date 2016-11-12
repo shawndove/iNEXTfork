@@ -1,0 +1,4 @@
+# iNEXT 2.0.12
+- Fixes vignettes error for `ggplot2` update.
+- Adds argument `conf` for `estimateD` function.
+- Fixes issue #12, 13

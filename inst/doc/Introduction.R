@@ -111,7 +111,7 @@ ggiNEXT(out.inc, type=3, color.var ="site") +
 
 ## ------------------------------------------------------------------------
 estimateD(ant, datatype="incidence_freq", 
-          base="coverage", level=0.985)
+          base="coverage", level=0.985, conf=0.95)
 
 ## ------------------------------------------------------------------------
 data(ciliates)
@@ -151,15 +151,15 @@ out <- iNEXT(spider, q=0, datatype="abundance")
 g <- ggiNEXT(out, type=1, color.var = "site")
 g
 
-## ------------------------------------------------------------------------
-g1 <- g + scale_shape_manual(values=c(11, 12)) + 
-          scale_linetype_manual(values=c(1,2))
-g2 <- g + scale_colour_manual(values=c("red", "blue")) +
-          scale_fill_manual(values=c("red", "blue"))
-
-# Draw multiple graphical objec on a page
-# library(gridExtra)
-grid.arrange(g1, g2, ncol=2)
+## ----eval=FALSE----------------------------------------------------------
+#  g1 <- g + scale_shape_manual(values=c(11, 12)) +
+#            scale_linetype_manual(values=c(1,2))
+#  g2 <- g + scale_colour_manual(values=c("red", "blue")) +
+#            scale_fill_manual(values=c("red", "blue"))
+#  
+#  # Draw multiple graphical objec on a page
+#  # library(gridExtra)
+#  grid.arrange(g1, g2, ncol=2)
 
 ## ------------------------------------------------------------------------
 # point is drawn on the 1st layer, default size is 5

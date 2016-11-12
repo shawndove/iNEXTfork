@@ -337,7 +337,7 @@ For example, the following command returns the species diversity with a specifie
 
 ```{r}
 estimateD(ant, datatype="incidence_freq", 
-          base="coverage", level=0.985)
+          base="coverage", level=0.985, conf=0.95)
 ```
 
 ## RAW INCIDENCE DATA FUNCTION: incidence_raw
@@ -412,7 +412,7 @@ g
 ```
 
 ### Change shapes, line types and colors
-```{r}
+```{r eval=FALSE}
 g1 <- g + scale_shape_manual(values=c(11, 12)) + 
           scale_linetype_manual(values=c(1,2))
 g2 <- g + scale_colour_manual(values=c("red", "blue")) +
