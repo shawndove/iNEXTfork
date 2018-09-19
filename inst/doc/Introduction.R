@@ -5,6 +5,8 @@ knitr::opts_chunk$set(collapse = TRUE, comment = "",
                       fig.width = 7, fig.height = 5,
                       warning = FALSE, message = FALSE)
 options("width"=200)
+if("ggthemes" %in% rownames(installed.packages()) == FALSE) {install.packages("ggthemes")}
+if("gridExtra" %in% rownames(installed.packages()) == FALSE) {install.packages("gridExtra")}
 library(iNEXT)
 library(ggplot2)
 data("spider")
