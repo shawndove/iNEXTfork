@@ -1,10 +1,10 @@
-608606c6b2d35d403bd9b9d6daf4630c *DESCRIPTION
+2901506ea9f629a651a96aab6fa4420c *DESCRIPTION
 b922c3395c2d2eaa9fa2f613b887aac1 *NAMESPACE
-aa8fb4a385d861c0940a0c0c64b4be6c *NEWS
+1e0afeee5211e1a1ceb6015a1f6eb7ec *NEWS
 8cb27c196daa3faac77cb857c6d97edf *R/EstIndex.R
-f54ea573a19f699eb37fdc78c8848308 *R/JADE.R
-35ba3165aa83175ebf4f603444b55740 *R/ggiNEXT.R
-806af433a8042ef81aeecd314b6cf382 *R/iNEXT.r
+9828c89bcff81cbf29fdd1ca0fde9725 *R/JADE.R
+7803ac2ec6f324a8ba1eb91e665d29dc *R/ggiNEXT.R
+d7f33b485dd728cb3f86fa974d52f1e7 *R/iNEXT.r
 245e2a76cf57bc2152559a4aad65920b *R/invChat.R
 0bee90dc31da1843e28d6276f1bf405c *R/plot.R
 9a6b95036bdb6dc082602fb50254c8cd *README/README-ex1-1.png
@@ -24,7 +24,7 @@ e1fd6c5c855a61643005377f8d725b94 *data/bird.rda
 4cd3dd436ebd067f50fe76e0050d0423 *inst/CITATION
 42a64347c62c2f7b69c3f8b76cddac2e *inst/doc/Introduction.R
 f43d224091588f61a67b50bc6af506d4 *inst/doc/Introduction.Rmd
-9c92e38a9b0c8c187a12574133787845 *inst/doc/Introduction.html
+60cd8eb10845c10d6039db39ef56c5a8 *inst/doc/Introduction.html
 0f5a84f80bb67da4ea98e0bb8ecbe7bd *man/ChaoRichness.Rd
 2a1dc35a6e05384b2ab38064888a99bd *man/ChaoShannon.Rd
 7fdbdc0893edd978319a18ac1f01b3b3 *man/ChaoSimpson.Rd
