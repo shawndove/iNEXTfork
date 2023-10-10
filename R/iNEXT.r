@@ -3,9 +3,9 @@
 #
 ###########################################
 # Draw confidence band plot
-# 
+#
 # \code{conf.reg} uses polygon to draw a confidence band plot
-# 
+#
 # @param x a vector of estimator
 # @param LCL a vector of lower bound
 # @param UCL a vector of upwer bound
@@ -24,20 +24,20 @@ conf.reg=function(x,LCL,UCL, data=NULL,...) {
 #
 ###########################################
 # Estimation of species reletive abundance distribution
-# 
+#
 # \code{EstiBootComm.Ind} Estimation of species reletive abundance distribution to obtain bootstrap s.e.
-# 
+#
 # @param Spec a vector of species abundances
 # @return a vector of reltavie abundance
 # @seealso \code{\link{EstiBootComm.Sam}}
-# @examples 
+# @examples
 # data(spider)
 # EstiBootComm.Ind(spider$Girdled)
 EstiBootComm.Ind <- function(Spec)
 {
   Sobs <- sum(Spec > 0)   #observed species
   n <- sum(Spec)        #sample size
-  f1 <- sum(Spec == 1)   #singleton 
+  f1 <- sum(Spec == 1)   #singleton
   f2 <- sum(Spec == 2)   #doubleton
   f0.hat <- ifelse(f2 == 0, (n - 1) / n * f1 * (f1 - 1) / 2, (n - 1) / n * f1 ^ 2/ 2 / f2)  #estimation of unseen species via Chao1
   A <- ifelse(f1>0, n*f0.hat/(n*f0.hat+f1), 1)
@@ -61,13 +61,13 @@ EstiBootComm.Ind <- function(Spec)
 #
 ###########################################
 # Estimation of species detection distribution
-# 
+#
 # \code{EstiBootComm.Sam} Estimation of species detection distribution to obtain bootstrap s.e.
-# 
+#
 # @param Spec a vector of species incidence, the first entry is the total number of sampling units, followed by the speceis incidences abundances.
 # @return a vector of estimated detection probability
 # @seealso \code{\link{EstiBootComm.Sam}}
-# @examples 
+# @examples
 # data(ant)
 # EstiBootComm.Sam(ant$h50m)
 EstiBootComm.Sam <- function(Spec)
@@ -75,13 +75,13 @@ EstiBootComm.Sam <- function(Spec)
   nT <- Spec[1]
   Spec <- Spec[-1]
   Sobs <- sum(Spec > 0)   #observed species
-  Q1 <- sum(Spec == 1) 	#singleton 
+  Q1 <- sum(Spec == 1) 	#singleton
   Q2 <- sum(Spec == 2) 	#doubleton
   Q0.hat <- ifelse(Q2 == 0, (nT - 1) / nT * Q1 * (Q1 - 1) / 2, (nT - 1) / nT * Q1 ^ 2/ 2 / Q2)	#estimation of unseen species via Chao2
   A <- ifelse(Q1>0, nT*Q0.hat/(nT*Q0.hat+Q1), 1)
   a <- Q1/nT*A
   b <- sum(Spec / nT * (1 - Spec / nT) ^ nT)
-  
+
   if(Q0.hat==0){
     w <- 0
     if(sum(Spec>0)==1){
@@ -90,7 +90,7 @@ EstiBootComm.Sam <- function(Spec)
   }else{
     w <- a / b      	#adjusted factor for rare species in the sample
   }
-  
+
   Prob.hat <- Spec / nT * (1 - w * (1 - Spec / nT) ^ nT)					#estimation of detection probability of observed species in the sample
   Prob.hat.Unse <- rep(a/ceiling(Q0.hat), ceiling(Q0.hat))  	#estimation of detection probability of unseen species in the sample
   return(sort(c(Prob.hat, Prob.hat.Unse), decreasing=TRUE))									#Output: a vector of estimated detection probability
@@ -101,9 +101,9 @@ EstiBootComm.Sam <- function(Spec)
 #
 ###########################################
 # iNterpolation and EXTrapolation of abundance-based Hill number
-# 
+#
 # \code{TD.m.est} Estimation of interpolation and extrapolation of abundance-based Hill number with order q
-# 
+#
 # @param x a vector of species abundances
 # @param m a integer vector of rarefaction/extrapolation sample size
 # @param qs a numerical vector of the order of Hill number
@@ -126,7 +126,7 @@ TD.m.est = function(x, m, qs){ ## here q is allowed to be a vector containing no
   # beta[beta0plus] <- (Dn1[beta0plus]-obs[beta0plus])/(asy[beta0plus]-obs[beta0plus])
   beta0plus <- which(asy != RFD_m)
   beta[beta0plus] <- (obs[beta0plus]-RFD_m[beta0plus])/(asy[beta0plus]-RFD_m[beta0plus])
-  #Extrapolation, 
+  #Extrapolation,
   ETD = function(m,qs){
     m = m-n
     out <- sapply(1:length(qs), function(i){
@@ -134,13 +134,13 @@ TD.m.est = function(x, m, qs){ ## here q is allowed to be a vector containing no
         obs[i]+(asy[i]-obs[i])*(1-(1-beta[i])^m)
       }else if( qs[i] == 2 ){
         1/ ((1/(n+m))+(1-1/(n+m))*sum(ifi[,2]*ifi[,1]/n*(ifi[,1]-1)/(n-1)) )
-      } 
+      }
     })
     return(out)
   }
   Sub = function(m){
     if(m<n){
-      if(m == round(m)) { mRTD[-1,mRTD[1,]==m] 
+      if(m == round(m)) { mRTD[-1,mRTD[1,]==m]
         } else { (ceiling(m)-m)*mRTD[-1,mRTD[1,]==floor(m)]+(m-floor(m))*mRTD[-1,mRTD[1,]==ceiling(m)] }
     }else if(m==n){
       obs
@@ -148,21 +148,21 @@ TD.m.est = function(x, m, qs){ ## here q is allowed to be a vector containing no
       ETD(m,qs)
     }
   }
-  
+
   if (sum(m < n) != 0) {
     int.m = sort(unique(c(floor(m[m<n]), ceiling(m[m<n]))))
     mRTD = rbind(int.m, sapply(int.m, function(k) RTD(ifi,n,k,qs)))
   }
-  as.vector(t(sapply(m, Sub))) 
+  as.vector(t(sapply(m, Sub)))
 }
 
 #
 #
 ###########################################
 # iNterpolation and EXTrapolation of incidence-based Hill number
-# 
+#
 # \code{TD.m.est_inc} Estimation of interpolation and extrapolation of incidence-based Hill number
-# 
+#
 # @param y a vector of species incidence-based frequency, the first entry is the total number of sampling units, followed by the speceis incidences abundances.
 # @param t_ a integer vector of rarefaction/extrapolation sample size
 # @param qs a numerical vector of the order of Hill number
@@ -193,13 +193,13 @@ TD.m.est_inc <- function(y, t_, qs){
         obs[i]+(asy[i]-obs[i])*(1-(1-beta[i])^m)
       }else if( qs[i] == 2 ){
         1/ ((1/(nT+m))*(nT/U)+(1-1/(nT+m))*sum(iQi[,2]*iQi[,1]/(U^2)*(iQi[,1]-1)/(1-1/nT)) )
-      } 
+      }
     })
     return(out)
   }
   Sub = function(m){
     if(m<nT){
-      if(m == round(m)) { mRTD_inc[-1,mRTD_inc[1,]==m] 
+      if(m == round(m)) { mRTD_inc[-1,mRTD_inc[1,]==m]
       } else { (ceiling(m)-m)*mRTD_inc[-1,mRTD_inc[1,]==floor(m)]+(m-floor(m))*mRTD_inc[-1,mRTD_inc[1,]==ceiling(m)] }
     }else if(m==nT){
       obs
@@ -207,7 +207,7 @@ TD.m.est_inc <- function(y, t_, qs){
       ETD(m,qs)
     }
   }
-  
+
   if (sum(t_ < nT) != 0) {
     int.t_ = sort(unique(c(floor(t_[t_<nT]), ceiling(t_[t_<nT]))))
     mRTD_inc = rbind(int.t_, sapply(int.t_, function(k) RTD_inc(iQi,nT,k,qs)))
@@ -219,9 +219,9 @@ TD.m.est_inc <- function(y, t_, qs){
 #
 ###############################################
 # Abundance-based sample coverage
-# 
+#
 # \code{Chat.Ind} Estimation of abundance-based sample coverage function
-# 
+#
 # @param x a vector of species abundances
 # @param m a integer vector of rarefaction/extrapolation sample size
 # @return a vector of estimated sample coverage function
@@ -243,7 +243,7 @@ Chat.Ind <- function(x, m){
     if(m > n) out <- 1-f1/n*A^(m-n+1)
     out
   }
-  sapply(m, Sub)		
+  sapply(m, Sub)
 }
 
 
@@ -251,9 +251,9 @@ Chat.Ind <- function(x, m){
 #
 ###############################################
 # Incidence-based sample coverage
-# 
+#
 # \code{Chat.Sam} Estimation of incidence-based sample coverage function
-# 
+#
 # @param x a vector of species incidence-based frequency, the first entry is the total number of sampling units, followed by the speceis incidences abundances.
 # @param t a integer vector of rarefaction/extrapolation sample size
 # @return a vector of estimated sample coverage function
@@ -270,14 +270,14 @@ Chat.Sam <- function(x, t){
   Sub <- function(t){
     if(t < nT) {
       yy <- y[(nT-y)>=t]
-      out <- 1 - sum(yy / U * exp(lgamma(nT-yy+1)-lgamma(nT-yy-t+1)-lgamma(nT)+lgamma(nT-t)))     
+      out <- 1 - sum(yy / U * exp(lgamma(nT-yy+1)-lgamma(nT-yy-t+1)-lgamma(nT)+lgamma(nT-t)))
     }
     #if(t < nT) out <- 1 - sum(y / U * exp(lchoose(nT - y, t) - lchoose(nT - 1, t)))
     if(t == nT) out <- 1 - Q1 / U * A
     if(t > nT) out <- 1 - Q1 / U * A^(t - nT + 1)
     out
   }
-  sapply(t, Sub)		
+  sapply(t, Sub)
 }
 
 
@@ -285,9 +285,9 @@ Chat.Sam <- function(x, t){
 #
 ###############################################
 # iNterpolation and EXTrapolation of abundance-based Hill number
-# 
+#
 # \code{iNEXT.Ind} Estimation of interpolation and extrapolation of abundance-based Hill number with order q
-# 
+#
 # @param Spec a vector of species abundances
 # @param q a numerical vector of the order of Hill number
 # @param m a integer vector of rarefaction/extrapolation sample size, default is NULL. If m is not be specified, then the program will compute sample units due to endpoint and knots.
@@ -314,7 +314,7 @@ iNEXT.Ind <- function(Spec, q=0, m=NULL, endpoint=2*sum(Spec), knots=40, se=TRUE
       m <- c(floor(seq(1, sum(Spec)-1, length.out=floor(knots/2)-1)), sum(Spec), floor(seq(sum(Spec)+1, to=endpoint, length.out=floor(knots/2))))
     }
     m <- c(1, m[-1])
-  } else if(is.null(m)==FALSE) {	
+  } else if(is.null(m)==FALSE) {
     if(max(m)>n | length(m[m==n])==0)  m <- c(m, n-1, n, n+1)
     m <- sort(m)
   }
@@ -333,10 +333,10 @@ iNEXT.Ind <- function(Spec, q=0, m=NULL, endpoint=2*sum(Spec), knots=40, se=TRUE
   if(se==TRUE & nboot > 1 & length(Spec) > 1) {
     Prob.hat <- EstiBootComm.Ind(Spec)
     Abun.Mat <- rmultinom(nboot, n, Prob.hat)
-    
+
     ses_m <- apply(matrix(apply(Abun.Mat,2 ,function(x) TD.m.est(x, m, q)),
                         nrow = length(Dq.hat)),1,sd, na.rm=TRUE)
-    
+
     ses_C_on_m <- apply(matrix(apply(Abun.Mat, 2, function(x) Chat.Ind(x, m)),nrow = length(m)),
                         1, sd, na.rm=TRUE)
     if(unconditional_var){
@@ -351,7 +351,7 @@ iNEXT.Ind <- function(Spec, q=0, m=NULL, endpoint=2*sum(Spec), knots=40, se=TRUE
     }
   }
   out_m <- cbind("m"=rep(m,length(q)), "qD"=Dq.hat, "qD.LCL"=Dq.hat-qtile*ses_m,
-                 "qD.UCL"=Dq.hat+qtile*ses_m,"SC"=rep(C.hat,length(q)), 
+                 "qD.UCL"=Dq.hat+qtile*ses_m,"SC"=rep(C.hat,length(q)),
                  "SC.LCL"=C.hat-qtile*ses_C_on_m, "SC.UCL"=C.hat+qtile*ses_C_on_m)
   out_m <- data.frame(out_m)
   out_m$Method <- ifelse(out_m$m<n, "Rarefaction", ifelse(out_m$m==n, "Observed", "Extrapolation"))
@@ -361,10 +361,10 @@ iNEXT.Ind <- function(Spec, q=0, m=NULL, endpoint=2*sum(Spec), knots=40, se=TRUE
   out_m$qD.LCL[out_m$qD.LCL<0] <- 0
   out_m$SC.LCL[out_m$SC.LCL<0] <- 0
   out_m$SC.UCL[out_m$SC.UCL>1] <- 1
-  
+
   if(unconditional_var){
     out_C <- cbind(Dq.hat_unc,'qD.LCL' = Dq.hat_unc$qD-qtile*ses_C,
-                   'qD.UCL' = Dq.hat_unc$qD+qtile*ses_C) 
+                   'qD.UCL' = Dq.hat_unc$qD+qtile*ses_C)
     id_C <- match(c("SC","m", "Method", "Order.q", "qD", "qD.LCL", "qD.UCL"), names(out_C), nomatch = 0)
     out_C <- out_C[, id_C]
     out_C$qD.LCL[out_C$qD.LCL<0] <- 0
@@ -380,9 +380,9 @@ iNEXT.Ind <- function(Spec, q=0, m=NULL, endpoint=2*sum(Spec), knots=40, se=TRUE
 #
 ###############################################
 # iNterpolation and EXTrapolation of incidence-based Hill number
-# 
+#
 # \code{iNEXT.Sam} Estimation of interpolation and extrapolation of incidence-based Hill number with order q
-# 
+#
 # @param Spec a vector of species incidence-based frequency, the first entry is the total number of sampling units, followed by the speceis incidences abundances.
 # @param q a numerical vector of the order of Hill number
 # @param t a integer vector of rarefaction/extrapolation sample size, default is NULL. If m is not be specified, then the program will compute sample units due to endpoint and knots.
@@ -401,9 +401,9 @@ iNEXT.Ind <- function(Spec, q=0, m=NULL, endpoint=2*sum(Spec), knots=40, se=TRUE
 iNEXT.Sam <- function(Spec, t=NULL, q=0, endpoint=2*max(Spec), knots=40, se=TRUE, nboot=200, conf=0.95, unconditional_var = TRUE)
 {
   qtile <- qnorm(1-(1-conf)/2)
-  if(which.max(Spec)!=1) 
+  if(which.max(Spec)!=1)
     stop("invalid data structure!, first element should be number of sampling units")
-  
+
   nT <- Spec[1]
   if(is.null(t)) {
     if(endpoint <= nT) {
@@ -412,7 +412,7 @@ iNEXT.Sam <- function(Spec, t=NULL, q=0, endpoint=2*max(Spec), knots=40, se=TRUE
       t <- c(floor(seq(1, nT-1, length.out=floor(knots/2)-1)), nT, floor(seq(nT+1, to=endpoint, length.out=floor(knots/2))))
     }
     t <- c(1, t[-1])
-  } else if(is.null(t)==FALSE) {	
+  } else if(is.null(t)==FALSE) {
     if(max(t)>nT | length(t[t==nT])==0)  t <- c(t, nT-1, nT, nT+1)
     t <- sort(t)
   }
@@ -432,7 +432,7 @@ iNEXT.Sam <- function(Spec, t=NULL, q=0, endpoint=2*max(Spec), knots=40, se=TRUE
     Dq.hat_unc$t = round(Dq.hat_unc$t)
     Dq.hat_unc$Method[Dq.hat_unc$t == nT] = "Observed"
   }
-  
+
   if(se==TRUE & nboot > 1 & length(Spec) > 2){
     Prob.hat <- EstiBootComm.Sam(Spec)
     Abun.Mat <- t(sapply(Prob.hat, function(p) rbinom(nboot, nT, p)))
@@ -442,10 +442,10 @@ iNEXT.Sam <- function(Spec, t=NULL, q=0, endpoint=2*max(Spec), knots=40, se=TRUE
     if(ncol(Abun.Mat)==0){
       out <- cbind("t"=t, "qD"=Dq.hat, "SC"=C.hat)
       warning("Insufficient data to compute bootstrap s.e.")
-    }else{		
+    }else{
       ses_m <- apply(matrix(apply(Abun.Mat,2 ,function(y) TD.m.est_inc(y, t, q)),
                             nrow = length(Dq.hat)),1,sd, na.rm=TRUE)
-      
+
       ses_C_on_m <- apply(matrix(apply(Abun.Mat, 2, function(y) Chat.Sam(y, t)),nrow = length(t)),
                           1, sd, na.rm=TRUE)
       if(unconditional_var){
@@ -460,9 +460,9 @@ iNEXT.Sam <- function(Spec, t=NULL, q=0, endpoint=2*max(Spec), knots=40, se=TRUE
       ses_C <- rep(NA,nrow(Dq.hat_unc))
     }
   }
-  
+
   out_m <- cbind("t"=rep(t,length(q)), "qD"=Dq.hat, "qD.LCL"=Dq.hat-qtile*ses_m,
-                 "qD.UCL"=Dq.hat+qtile*ses_m,"SC"=rep(C.hat,length(q)), 
+                 "qD.UCL"=Dq.hat+qtile*ses_m,"SC"=rep(C.hat,length(q)),
                  "SC.LCL"=C.hat-qtile*ses_C_on_m, "SC.UCL"=C.hat+qtile*ses_C_on_m)
   out_m <- data.frame(out_m)
   out_m$Method <- ifelse(out_m$t<nT, "Rarefaction", ifelse(out_m$t==nT, "Observed", "Extrapolation"))
@@ -472,10 +472,10 @@ iNEXT.Sam <- function(Spec, t=NULL, q=0, endpoint=2*max(Spec), knots=40, se=TRUE
   out_m$qD.LCL[out_m$qD.LCL<0] <- 0
   out_m$SC.LCL[out_m$SC.LCL<0] <- 0
   out_m$SC.UCL[out_m$SC.UCL>1] <- 1
-  
+
   if(unconditional_var){
     out_C <- cbind(Dq.hat_unc,'qD.LCL' = Dq.hat_unc$qD-qtile*ses_C,
-                   'qD.UCL' = Dq.hat_unc$qD+qtile*ses_C) 
+                   'qD.UCL' = Dq.hat_unc$qD+qtile*ses_C)
     id_C <- match(c("SC","t", "Method", "Order.q", "qD", "qD.LCL", "qD.UCL"), names(out_C), nomatch = 0)
     out_C <- out_C[, id_C]
     out_C$qD.LCL[out_C$qD.LCL<0] <- 0
@@ -490,21 +490,21 @@ iNEXT.Sam <- function(Spec, t=NULL, q=0, endpoint=2*max(Spec), knots=40, se=TRUE
 #
 ###############################################
 #' iNterpolation and EXTrapolation of Hill numbers
-#' 
+#'
 #' \code{iNEXT}: Interpolation and extrapolation of Hill number with order q
-#' 
-#' @param x a \code{matrix}, \code{data.frame} (species by sites), or \code{list} of species abundances or incidence frequencies. If \code{datatype = "incidence_freq"}, then the first entry of the input data must be total number of sampling units in each column or list. 
+#'
+#' @param x a \code{matrix}, \code{data.frame} (species by sites), or \code{list} of species abundances or incidence frequencies. If \code{datatype = "incidence_freq"}, then the first entry of the input data must be total number of sampling units in each column or list.
 #' @param q a number or vector specifying the diversity order(s) of Hill numbers.
-#' @param datatype data type of input data: individual-based abundance data (\code{datatype = "abundance"}),  
+#' @param datatype data type of input data: individual-based abundance data (\code{datatype = "abundance"}),
 #' sampling-unit-based incidence frequencies data (\code{datatype = "incidence_freq"}) or species by sampling-units incidence matrix (\code{datatype = "incidence_raw"}).
 # @param rowsum a logical variable to check if the input object is raw data (species by sites matrix, \code{rowsum=FALSE}) or iNEXT default input (abundance counts or incidence frequencies, \code{rowsum=TRUE}).
-#' @param size an integer vector of sample sizes (number of individuals or sampling units) for which diversity estimates will be computed. 
+#' @param size an integer vector of sample sizes (number of individuals or sampling units) for which diversity estimates will be computed.
 #' If NULL, then diversity estimates will be computed for those sample sizes determined by the specified/default \code{endpoint} and \code{knots} .
-#' @param endpoint an integer specifying the sample size that is the \code{endpoint} for rarefaction/extrapolation. 
+#' @param endpoint an integer specifying the sample size that is the \code{endpoint} for rarefaction/extrapolation.
 #' If NULL, then \code{endpoint} \code{=} double the reference sample size.
 #' @param knots an integer specifying the number of equally-spaced \code{knots} (say K, default is 40) between size 1 and the \code{endpoint};
-#' each knot represents a particular sample size for which diversity estimate will be calculated.  
-#' If the \code{endpoint} is smaller than the reference sample size, then \code{iNEXT()} computes only the rarefaction esimates for approximately K evenly spaced \code{knots}. 
+#' each knot represents a particular sample size for which diversity estimate will be calculated.
+#' If the \code{endpoint} is smaller than the reference sample size, then \code{iNEXT()} computes only the rarefaction esimates for approximately K evenly spaced \code{knots}.
 #' If the \code{endpoint} is larger than the reference sample size, then \code{iNEXT()} computes rarefaction estimates for approximately K/2 evenly spaced \code{knots} between sample size 1 and the reference sample size, and computes extrapolation estimates for approximately K/2 evenly spaced \code{knots} between the reference sample size and the \code{endpoint}.
 #' @param se a logical variable to calculate the bootstrap standard error and \code{conf} confidence interval.
 #' @param conf a positive number < 1 specifying the level of confidence interval; default is 0.95.
@@ -516,12 +516,12 @@ iNEXT.Sam <- function(Spec, t=NULL, q=0, endpoint=2*max(Spec), knots=40, se=TRUE
 #' @importFrom stats rbinom
 #' @importFrom stats optimize
 #' @importFrom stats quantile
-#' @return a list of three objects: \code{$DataInfo} for summarizing data information; 
+#' @return a list of three objects: \code{$DataInfo} for summarizing data information;
 #' \code{$iNextEst} for showing diversity estimates for rarefied and extrapolated samples along with related statistics;
-#' and \code{$AsyEst} for showing asymptotic diversity estimates along with related statistics.\cr 
-#' 
-#' NOTE: From version 3.0.0, \code{$iNextEst} has been expanded to include \code{$size_based} and \cr 
-#'       \code{$coverage_based} to provide two types of confidence intervals. 
+#' and \code{$AsyEst} for showing asymptotic diversity estimates along with related statistics.\cr
+#'
+#' NOTE: From version 3.0.0, \code{$iNextEst} has been expanded to include \code{$size_based} and \cr
+#'       \code{$coverage_based} to provide two types of confidence intervals.
 #'
 #' @examples
 #' ## example for abundance based data (list of vector)
@@ -529,11 +529,11 @@ iNEXT.Sam <- function(Spec, t=NULL, q=0, endpoint=2*max(Spec), knots=40, se=TRUE
 #' out1 <- iNEXT(spider, q=c(0,1,2), datatype="abundance")
 #' out1$DataInfo # showing basic data information.
 #' out1$AsyEst # showing asymptotic diversity estimates.
-#' out1$iNextEst$size_based 
-#' # showing diversity estimates with rarefied and extrapolated samples; 
+#' out1$iNextEst$size_based
+#' # showing diversity estimates with rarefied and extrapolated samples;
 #' # confidence limits are obtained for fixed sample size.
-#' 
-#' out1$iNextEst$coverage_based 
+#'
+#' out1$iNextEst$coverage_based
 #' # showing diversity estimates with rarefied and extrapolated samples;
 #' # confidence limits are obtained for fixed sample coverage.
 #'
@@ -541,7 +541,7 @@ iNEXT.Sam <- function(Spec, t=NULL, q=0, endpoint=2*max(Spec), knots=40, se=TRUE
 #' data(bird)
 #' out2 <- iNEXT(bird, q=0, datatype="abundance")
 #' out2
-#' 
+#'
 #' \dontrun{
 #' ## example for incidence frequencies based data (list of data.frame)
 #' data(ant)
@@ -550,7 +550,7 @@ iNEXT.Sam <- function(Spec, t=NULL, q=0, endpoint=2*max(Spec), knots=40, se=TRUE
 #' out3$iNextEst
 #' }
 #' @export
-#' 
+#'
 iNEXT <- function(x, q=0, datatype="abundance", size=NULL, endpoint=NULL, knots=40, se=TRUE, conf=0.95, nboot=50)
 {
   TYPE <- c("abundance", "incidence", "incidence_freq", "incidence_raw")
@@ -560,13 +560,13 @@ iNEXT <- function(x, q=0, datatype="abundance", size=NULL, endpoint=NULL, knots=
     stop("ambiguous datatype")
   datatype <- match.arg(datatype, TYPE)
   class_x <- class(x)[1]
-  
+
   if(datatype == "incidence"){
-    stop('datatype="incidence" was no longer supported after v2.0.8, 
-         please try datatype="incidence_freq".')  
+    stop('datatype="incidence" was no longer supported after v2.0.8,
+         please try datatype="incidence_freq".')
   }
   if(datatype=="incidence_freq") datatype <- "incidence"
-  
+
   if(datatype=="incidence_raw"){
     if(class_x=="list"){
       x <- lapply(x, as.incfreq)
@@ -590,7 +590,7 @@ iNEXT <- function(x, q=0, datatype="abundance", size=NULL, endpoint=NULL, knots=
   #       }
   #     }
   #   }
-  
+
   Fun <- function(x, q, assem_name){
     x <- as.numeric(unlist(x))
     unconditional_var <- TRUE
@@ -602,11 +602,11 @@ iNEXT <- function(x, q=0, datatype="abundance", size=NULL, endpoint=NULL, knots=
       t <- x[1]
       y <- x[-1]
       if(t>sum(y)){
-        warning("Insufficient data to provide reliable estimators and associated s.e.") 
+        warning("Insufficient data to provide reliable estimators and associated s.e.")
       }
       if(sum(x)==0) stop("Zero incidence frequencies in one or more sample sites")
-      
-      out <- iNEXT.Sam(Spec=x, q=q, t=size, endpoint=ifelse(is.null(endpoint), 2*max(x), endpoint), knots=knots, se=se, nboot=nboot, conf=conf)  
+
+      out <- iNEXT.Sam(Spec=x, q=q, t=size, endpoint=ifelse(is.null(endpoint), 2*max(x), endpoint), knots=knots, se=se, nboot=nboot, conf=conf)
     }
     if(unconditional_var){
       out <- lapply(out, function(out_) cbind(Assemblage = assem_name, out_))
@@ -615,35 +615,35 @@ iNEXT <- function(x, q=0, datatype="abundance", size=NULL, endpoint=NULL, knots=
     }
     out
   }
-  
+
   if(!inherits(q, "numeric"))
     stop("invlid class of order q, q should be a postive value/vector of numeric object")
   if(min(q) < 0){
     warning("ambigous of order q, we only compute postive q")
     q <- q[q >= 0]
   }
-  
+
   z <- qnorm(1-(1-0.95)/2)
   if(class_x=="numeric" | class_x=="integer" | class_x=="double"){
     out <- Fun(x,q,'Assemblage1')
-    
+
     out <- list(size_based = out[[1]],
                 coverage_based = out[[2]])
-    
-    index <- AsyD(x = x,q = c(0,1,2),datatype = ifelse(datatype=='abundance','abundance','incidence_freq')
-                     ,nboot = 100,conf = 0.95)
+
+    index <- try(AsyD(x = x,q = c(0,1,2),datatype = ifelse(datatype=='abundance','abundance','incidence_freq')
+                     ,nboot = 100,conf = 0.95))
     LCL <- index$qD.LCL[index$method=='Estimated']
     UCL <- index$qD.UCL[index$method=='Estimated']
     index <- dcast(index,formula = Order.q~method,value.var = 'qD')
     index <- cbind(index[,-1],se = (UCL - index$Estimated)/z,LCL,UCL)
     index$LCL[index$LCL<index$Empirical & index$Order.q==0] <- index$Empirical[index$LCL<index$Empirical & index$Order.q==0]
     colnames(index) <- c("Observed","Estimator","Est_s.e.","95% Lower","95% Upper")
-    # index <- rbind(as.matrix(ChaoSpecies(x, datatype, conf)), 
+    # index <- rbind(as.matrix(ChaoSpecies(x, datatype, conf)),
     #                as.matrix(ChaoEntropy(x, datatype, transform=TRUE, conf)),
     #                as.matrix(EstSimpson(x, datatype, transform=TRUE, conf)))
     rownames(index) <- c("Species Richness", "Shannon diversity", "Simpson diversity")
-  
-    
+
+
   }else if(class_x=="matrix" | class_x=="data.frame"){
     if(is.null(colnames(x))){
       colnames(x) <- sapply(1:ncol(x), function(i) paste0('assemblage',i))
@@ -654,7 +654,7 @@ iNEXT <- function(x, q=0, datatype="abundance", size=NULL, endpoint=NULL, knots=
     })
     out <- list(size_based = do.call(rbind,lapply(out,  function(out_){out_[[1]]})),
                 coverage_based = do.call(rbind,lapply(out,  function(out_){out_[[2]]})))
-    
+
     index <- AsyD(x = x,q = c(0,1,2),datatype = ifelse(datatype=='abundance','abundance','incidence_freq'),nboot = 100,conf = 0.95)
     index = index[order(index$Assemblage),]
     LCL <- index$qD.LCL[index$method=='Estimated']
@@ -666,15 +666,15 @@ iNEXT <- function(x, q=0, datatype="abundance", size=NULL, endpoint=NULL, knots=
     # arr <- array(0, dim = c(3, 5, ncol(x)))
     # arr[1,,] <- t(as.matrix(ChaoSpecies(x, datatype, conf)))
     # arr[2,,] <- t(as.matrix(ChaoEntropy(x, datatype, transform=TRUE, conf)))
-    # arr[3,,] <- t(as.matrix(EstSimpson(x, datatype, transform=TRUE, conf)))  
+    # arr[3,,] <- t(as.matrix(EstSimpson(x, datatype, transform=TRUE, conf)))
     # dimnames(arr)[[3]] <- names(x)
     # dimnames(arr)[[1]] <- c("Species richness", "Shannon diversity", "Simpson diversity")
     # dimnames(arr)[[2]] <- c("Observed", "Estimator", "Est_s.e.", "Lower_CI", "Upper_CI")
     # index <- ftable(arr, row.vars = c(3,1))
     # index <- dcast(as.data.frame(index), formula = Var1+Var2~Var3, value.var = "Freq")
     colnames(index) <- c("Assemblage", "Diversity", "Observed", "Estimator", "s.e.", "LCL", "UCL")
-    
-    
+
+
   }else if(class_x=="list"){
     if(is.null(names(x))){
       names(x) <- sapply(1:length(x), function(i) paste0('assemblage',i))
@@ -683,10 +683,10 @@ iNEXT <- function(x, q=0, datatype="abundance", size=NULL, endpoint=NULL, knots=
       tmp <- Fun(x[[i]],q,names(x)[i])
       tmp
     })
-    
+
     out <- list(size_based = do.call(rbind,lapply(out,  function(out_){out_[[1]]})),
                 coverage_based = do.call(rbind,lapply(out,  function(out_){out_[[2]]})))
-    
+
     index <- AsyD(x = x,q = c(0,1,2),datatype = ifelse(datatype=='abundance','abundance','incidence_freq'),nboot = 100,conf = 0.95)
     index = index[order(index$Assemblage),]
     LCL <- index$qD.LCL[index$method=='Estimated']
@@ -698,7 +698,7 @@ iNEXT <- function(x, q=0, datatype="abundance", size=NULL, endpoint=NULL, knots=
     # arr <- array(0, dim = c(3, 5, length(x)))
     # arr[1,,] <- t(as.matrix(ChaoSpecies(x, datatype, conf)))
     # arr[2,,] <- t(as.matrix(ChaoEntropy(x, datatype, transform=TRUE, conf)))
-    # arr[3,,] <- t(as.matrix(EstSimpson(x, datatype, transform=TRUE, conf)))  
+    # arr[3,,] <- t(as.matrix(EstSimpson(x, datatype, transform=TRUE, conf)))
     # dimnames(arr)[[3]] <- names(x)
     # dimnames(arr)[[1]] <- c("Species richness", "Shannon diversity", "Simpson diversity")
     # dimnames(arr)[[2]] <- c("Observed", "Estimator", "Est_s.e.", "Lower_CI", "Upper_CI")
@@ -711,8 +711,8 @@ iNEXT <- function(x, q=0, datatype="abundance", size=NULL, endpoint=NULL, knots=
   out$size_based$Assemblage <- as.character(out$size_based$Assemblage)
   out$coverage_based$Assemblage <- as.character(out$coverage_based$Assemblage)
   info <- DataInfo(x, datatype)
-  
-  
+
+
   z <- list("DataInfo"=info, "iNextEst"=out, "AsyEst"=index)
   class(z) <- c("iNEXT")
   return(z)
@@ -723,13 +723,13 @@ iNEXT <- function(x, q=0, datatype="abundance", size=NULL, endpoint=NULL, knots=
 #
 ###########################################
 # Estimation of the rank of species relative abundance distribution or detection probability
-# 
+#
 # \code{EstDis} Estimation of the rank of species relative abundance distribution or detection probability to obtain bootstrap s.e.
-# 
+#
 # @param x a vector of species abundances or incidence frequencies. If \code{datatype = "incidence"}, then the input format of first entry should be total number of sampling units, and followed by species incidence frequency.
 # @param datatype the data type of input data. That is individual-based abundance data (\code{datatype = "abundance"}) or sample-based incidence data (\code{datatype = "incidence"}).
 # @return a vector of the rank of estimated relative abundance distribution or detection probability
-# @examples 
+# @examples
 # data(spider)
 # EstDis(spider$Girdled, datatype="abundance")
 # data(ant)
@@ -737,23 +737,23 @@ iNEXT <- function(x, q=0, datatype="abundance", size=NULL, endpoint=NULL, knots=
 # @export
 EstDis <- function(x, datatype=c("abundance", "incidence")){
   datatype <- match.arg(datatype)
-  if(datatype == "abundance") out <- EstiBootComm.Ind(Spec=x)                                                      
+  if(datatype == "abundance") out <- EstiBootComm.Ind(Spec=x)
   if(datatype == "incidence") out <- EstiBootComm.Sam(Spec=x)
-  out 
+  out
 }
 
 #
 #
 ###############################################
-# Asymptotic diversity q profile 
+# Asymptotic diversity q profile
 AsyD <- function(x, q = seq(0, 2, 0.2), datatype = "abundance", nboot = 50, conf = 0.95){
   if(datatype == "incidence"){
-    stop('datatype="incidence" was no longer supported, 
-         please try datatype = "incidence_freq".')  
+    stop('datatype="incidence" was no longer supported,
+         please try datatype = "incidence_freq".')
   }
   if(datatype == "incidence_raw"){
-    stop('datatype="incidence_raw" was no longer supported, 
-         please try datatype = "incidence_freq".')  
+    stop('datatype="incidence_raw" was no longer supported,
+         please try datatype = "incidence_freq".')
   }
   TYPE <- c("abundance", "incidence_freq")
   if(is.na(pmatch(datatype, TYPE)))
@@ -771,7 +771,7 @@ AsyD <- function(x, q = seq(0, 2, 0.2), datatype = "abundance", nboot = 50, conf
     stop("Please enter non-negative integer for nboot.")
   if(conf < 0 | conf > 1)
     stop("Please enter value between zero and one for confident interval.")
-  
+
   if (inherits(x, "data.frame") | inherits(x, "matrix")){
     datalist <- lapply(1:ncol(x), function(i) x[,i])
     if(is.null(colnames(x))) names(datalist) <-  paste0("data",1:ncol(x)) else names(datalist) <- colnames(x)
@@ -779,17 +779,17 @@ AsyD <- function(x, q = seq(0, 2, 0.2), datatype = "abundance", nboot = 50, conf
   } else if (inherits(x, "numeric") | inherits(x, "integer") | inherits(x, "double")) {
     x <- list(data = x)
   }
-  
+
   if(datatype=="abundance"){
     out <- lapply(1:length(x),function(i){
       dq <- c(Diversity_profile(x[[i]],q),Diversity_profile_MLE(x[[i]],q))
       if(nboot > 1){
         Prob.hat <- EstiBootComm.Ind(x[[i]])
         Abun.Mat <- rmultinom(nboot, sum(x[[i]]), Prob.hat)
-        
-        error <- qnorm(1-(1-conf)/2) * 
+
+        error <- qnorm(1-(1-conf)/2) *
           apply(apply(Abun.Mat, 2, function(xb) c(Diversity_profile(xb, q),Diversity_profile_MLE(xb,q))), 1, sd, na.rm=TRUE)
-        
+
       } else {error = NA}
       out <- data.frame("Order.q" = rep(q,2), "qD" = dq,"qD.LCL" = dq - error, "qD.UCL" = dq + error,
                         "Assemblage" = names(x)[i], "method" = rep(c("Estimated","Empirical"),each = length(q)))
@@ -810,8 +810,8 @@ AsyD <- function(x, q = seq(0, 2, 0.2), datatype = "abundance", nboot = 50, conf
         if(ncol(Abun.Mat)==0){
           error = 0
           warning("Insufficient data to compute bootstrap s.e.")
-        }else{		
-          error <- qnorm(1-(1-conf)/2) * 
+        }else{
+          error <- qnorm(1-(1-conf)/2) *
             apply(apply(Abun.Mat, 2, function(yb) c(Diversity_profile.inc(yb, q),Diversity_profile_MLE.inc(yb,q))), 1, sd, na.rm=TRUE)
         }
       } else {error = NA}
@@ -870,7 +870,7 @@ AsyD <- function(x, q = seq(0, 2, 0.2), datatype = "abundance", nboot = 50, conf
 
 ##2000m
 # y2000=c(200,1,2,2,3,4,8,8,13,15,19,23,34,59,80)
-# 
+#
 # ant <- list(h50m=y50, h500m=y500, h1070m=y1070, h1500m=y1500, h2000m=y2000)
 
 
