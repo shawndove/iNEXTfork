@@ -655,7 +655,7 @@ iNEXT <- function(x, q=0, datatype="abundance", size=NULL, endpoint=NULL, knots=
     out <- list(size_based = do.call(rbind,lapply(out,  function(out_){out_[[1]]})),
                 coverage_based = do.call(rbind,lapply(out,  function(out_){out_[[2]]})))
 
-    index <- AsyD(x = x,q = c(0,1,2),datatype = ifelse(datatype=='abundance','abundance','incidence_freq'),nboot = 100,conf = 0.95)
+    index <- try(AsyD(x = x,q = c(0,1,2),datatype = ifelse(datatype=='abundance','abundance','incidence_freq'),nboot = 100,conf = 0.95))
     index = index[order(index$Assemblage),]
     LCL <- index$qD.LCL[index$method=='Estimated']
     UCL <- index$qD.UCL[index$method=='Estimated']
@@ -687,7 +687,7 @@ iNEXT <- function(x, q=0, datatype="abundance", size=NULL, endpoint=NULL, knots=
     out <- list(size_based = do.call(rbind,lapply(out,  function(out_){out_[[1]]})),
                 coverage_based = do.call(rbind,lapply(out,  function(out_){out_[[2]]})))
 
-    index <- AsyD(x = x,q = c(0,1,2),datatype = ifelse(datatype=='abundance','abundance','incidence_freq'),nboot = 100,conf = 0.95)
+    index <- try(AsyD(x = x,q = c(0,1,2),datatype = ifelse(datatype=='abundance','abundance','incidence_freq'),nboot = 100,conf = 0.95))
     index = index[order(index$Assemblage),]
     LCL <- index$qD.LCL[index$method=='Estimated']
     UCL <- index$qD.UCL[index$method=='Estimated']
